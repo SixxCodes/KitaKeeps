@@ -1,0 +1,93 @@
+/* =================== LINKS =================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* =================== DESIGNS =================== */
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(to bottom, #e0f2fe, #ffffff);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* =================== ANIMATIONS =================== */
+/* Shapes */
+.float-shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.25;
+    filter: blur(12px);
+    animation: float 6s ease-in-out infinite;
+    mix-blend-mode: multiply;
+}
+
+.float-shape:nth-child(1) {
+    width: 160px;
+    height: 160px;
+    background: #38bdf8;
+    top: 10%;
+    left: 5%;
+    animation-delay: 0s;
+}
+
+.float-shape:nth-child(2) {
+    width: 120px;
+    height: 120px;
+    background: #0ea5e9;
+    top: 70%;
+    right: 10%;
+    animation-delay: 2s;
+}
+
+.float-shape:nth-child(3) {
+    width: 200px;
+    height: 200px;
+    background: #7dd3fc;
+    top: 40%;
+    left: 50%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    }
+    50% {
+    transform: translateY(-20px) translateX(10px) rotate(10deg);
+    }
+}
+
+/* Form container animation */
+.fade-slide-in {
+    animation: fadeSlideIn 1s ease forwards;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+@keyframes fadeSlideIn {
+    to {
+    opacity: 1;
+    transform: translateY(0);
+    }
+}
+
+/* Input field focus ring */
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.5);
+}
+
+/* Button hover */
+button:hover {
+    background-color: #0284c7;
+}
+
+/* Show password (eye icon) 
+walaon ang built-in show passwords sa browser kay pangit
+-dli mu-function ug tarong*/
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-textfield-decoration-container,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-password-toggle {
+  display: none !important;
+}
