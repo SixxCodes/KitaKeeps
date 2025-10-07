@@ -26,7 +26,7 @@
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
         <!-- Dark Mode -->
-        <div x-data="{ dark: localStorage.getItem('dark') === 'true' }"
+        <!-- <div x-data="{ dark: localStorage.getItem('dark') === 'true' }"
             x-init="$watch('dark', value => {
                 document.documentElement.classList.toggle('dark', value);
                 localStorage.setItem('dark', value);
@@ -41,14 +41,13 @@
                     </div>
                 </div>
 
-                <!-- Toggle Switch -->
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="dark" class="sr-only peer">
                     <div class="h-6 bg-gray-200 rounded-full w-11 peer peer-checked:bg-blue-600"></div>
                     <div class="absolute w-5 h-5 bg-white rounded-full left-1 top-0.5 peer-checked:translate-x-full transition"></div>
                 </label>
             </div>
-        </div>
+        </div> -->
 
         <!-- Font Size -->
         <div x-data="{ fontSize: localStorage.getItem('fontSize') || 'medium' }"
@@ -78,11 +77,11 @@
         </div>
 
         <!-- Check for Updates -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm hover:shadow-md">
+        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
             <div class="flex items-center space-x-3">
                 <i class="text-xl text-yellow-600 fa-solid fa-rotate"></i>
                 <div>
-                    <p class="font-medium text-gray-800">Check for Updates</p>
+                    <p class="font-medium text-gray-800 dark:text-gray-200">Check for Updates</p>
                     <p class="text-sm text-gray-500">Ensure you’re running the latest version.</p>
                 </div>
             </div>
@@ -92,11 +91,11 @@
         </div>
 
         <!-- Read Terms and Services -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm hover:shadow-md">
+        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
             <div class="flex items-center space-x-3">
                 <i class="text-xl text-purple-600 fa-solid fa-file-contract"></i>
                 <div>
-                    <p class="font-medium text-gray-800">Terms & Services</p>
+                    <p class="font-medium text-gray-800 dark:text-gray-200">Terms & Services</p>
                     <p class="text-sm text-gray-500">Read our terms and conditions.</p>
                 </div>
             </div>
@@ -109,11 +108,11 @@
         </div>
 
         <!-- Audit Log -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm hover:shadow-md">
+        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
             <div class="flex items-center space-x-3">
                 <i class="text-xl text-red-600 fa-solid fa-clipboard-list"></i>
                 <div>
-                    <p class="font-medium text-gray-800">Audit Log</p>
+                    <p class="font-medium text-gray-800 dark:text-gray-200">Audit Log</p>
                     <p class="text-sm text-gray-500">View system activities and records.</p>
                 </div>
             </div>
@@ -126,11 +125,11 @@
         </div>
 
         <!-- Help -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm hover:shadow-md">
+        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
             <div class="flex items-center space-x-3">
                 <i class="text-xl text-indigo-600 fa-solid fa-circle-question"></i>
                 <div>
-                    <p class="font-medium text-gray-800">Help</p>
+                    <p class="font-medium text-gray-800 dark:text-gray-200">Help</p>
                     <p class="text-sm text-gray-500">Get assistance or support.</p>
                 </div>
             </div>

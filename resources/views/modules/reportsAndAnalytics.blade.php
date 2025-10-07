@@ -1,3 +1,27 @@
+@php
+    $user = auth()->user();
+
+    // Get all branch IDs the user owns
+    $userBranchIds = $user->branches()->pluck('branch.branch_id')->toArray();
+
+    // Top 5 products by total qty sold (across all user's branches)
+    $topProducts = \App\Models\BranchProduct::with('product')
+        ->withSum('branch_producthasManysale_item as total_sold', 'quantity')
+        ->whereIn('branch_id', $userBranchIds)
+        ->orderByDesc('total_sold')
+        ->take(5)
+        ->get();
+
+    // Top 5 branches by total sales amount
+    $topBranches = \App\Models\Branch::selectRaw('branch.branch_id, branch.branch_name, COALESCE(SUM(sale.total_amount), 0) as total_sales')
+        ->leftJoin('sale', 'branch.branch_id', '=', 'sale.branch_id')
+        ->whereIn('branch.branch_id', $userBranchIds) // only branches of this user
+        ->groupBy('branch.branch_id', 'branch.branch_name')
+        ->orderByDesc('total_sales')
+        ->take(5)
+        ->get();
+@endphp
+
 <!-- Module Header -->
 <div class="flex items-center justify-between">
     <div class="flex flex-col mr-5">
@@ -61,135 +85,58 @@
 
 
 <div class="flex mb-10 space-x-5">
+    {{-- Top 5 Products --}}
     <div class="flex-1 p-6 mt-10 bg-white rounded-lg shadow min-w-[350px]">
         <h2 class="mb-6 text-xl font-semibold text-gray-700">Top 5 Products by Sales</h2>
-
-        <!-- Chart Container -->
         <div class="space-y-6">
-
-            <!-- Product 1 -->
+            @foreach ($topProducts as $product)
+            @php
+                $percentage = $topProducts->first()->total_sold > 0 
+                    ? round($product->total_sold / $topProducts->first()->total_sold * 100)
+                    : 0;
+            @endphp
             <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">Product A</span>
+                <span class="w-24 text-gray-600">{{ $product->product->prod_name ?? 'Unknown' }}</span>
                 <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: 90%;"></div>
+                    <div class="h-6 bg-blue-600 rounded-full" style="width: {{ $percentage }}%;"></div>
                 </div>
-                <span class="w-12 text-right text-gray-700">90</span>
+                <span class="w-12 text-right text-gray-700">{{ $product->total_sold }}</span>
             </div>
-
-            <!-- Product 2 -->
-            <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">Product B</span>
-                <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: 75%;"></div>
-                </div>
-                <span class="w-12 text-right text-gray-700">75</span>
-            </div>
-
-            <!-- Product 3 -->
-            <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">Product C</span>
-                <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: 60%;"></div>
-                </div>
-                <span class="w-12 text-right text-gray-700">60</span>
-            </div>
-
-            <!-- Product 4 -->
-            <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">Product D</span>
-                <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: 45%;"></div>
-                </div>
-                <span class="w-12 text-right text-gray-700">45</span>
-            </div>
-
-            <!-- Product 5 -->
-            <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">Product E</span>
-                <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: 30%;"></div>
-                </div>
-                <span class="w-12 text-right text-gray-700">30</span>
-            </div>
-            <p class="mt-5 text-sm text-gray-500">
-                <i class="fa-solid fa-robot"></i>
-                Mampising Branch is currently the highest-performing branch in terms of sales, followed closely by The Cymanti Branch. Bardur Branch has the lowest sales among the top 5, highlighting areas for potential growth.
-            </p>
+            @endforeach
         </div>
     </div>
 
-
-
+    {{-- Top 5 Stores/Branches --}}
     <div class="flex-1 p-6 mt-10 bg-white rounded-lg shadow min-w-[350px]">
         <h2 class="mb-6 text-xl font-semibold text-gray-700">Top 5 Stores by Sales</h2>
-        
-        {{-- Store Item --}}
         <div class="space-y-3">
-            {{-- Gateway str --}}
+            @foreach ($topBranches as $branch)
+            @php
+                $maxSales = $topBranches->first()->total_sales ?? 1;
+                $widthPercentage = round($branch->total_sales / $maxSales * 100);
+            @endphp
             <div>
                 <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-700">Mampising Branch</span>
-                    <span class="text-sm font-medium text-gray-700">87k</span>
+                    <span class="text-sm font-medium text-gray-700">{{ $branch->branch_name }}</span>
+                    <span class="text-sm font-medium text-gray-700">{{ number_format($branch->total_sales) }}</span>
                 </div>
                 <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: 100%;"></div>
+                    <div class="h-4 bg-blue-500 rounded-full" style="width: {{ $branch->total_sales ? ($branch->total_sales / $topBranches->first()->total_sales * 100) : 0 }}%;"></div>
                 </div>
             </div>
-
-            {{-- The Rustic Fox --}}
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-700">Cymanti Branch</span>
-                    <span class="text-sm font-medium text-gray-700">72k</span>
-                </div>
-                <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: 82.8%;"></div>
-                </div>
-            </div>
-
-            {{-- Velvet Vine --}}
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-700">Elyrion Branch</span>
-                    <span class="text-sm font-medium text-gray-700">59k</span>
-                </div>
-                <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: 67.8%;"></div>
-                </div>
-            </div>
-
-            {{-- Blue Harbor --}}
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-700">Polaris Branch</span>
-                    <span class="text-sm font-medium text-gray-700">50k</span>
-                </div>
-                <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: 57.5%;"></div>
-                </div>
-            </div>
-
-            {{-- Blue Harbor --}}
-            <div>
-                <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-700">Bardur Branch</span>
-                    <span class="text-sm font-medium text-gray-700">50k</span>
-                </div>
-                <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: 57.5%;"></div>
-                </div>
-            </div>
-
-            <p class="mt-5 text-sm text-gray-500">
-                <i class="fa-solid fa-robot"></i>
-                Mampising Branch is currently the highest-performing branch in terms of sales, followed closely by The Cymanti Branch. Bardur Branch has the lowest sales among the top 5, highlighting areas for potential growth.
-            </p>
-            
+            @endforeach
         </div>
     </div>
 </div>
 
+<div class="p-6 bg-white rounded shadow">
+    <h2 class="mb-4 text-xl font-semibold">AI Forecast Summary</h2>
+
+    <pre class="text-gray-700 whitespace-pre-wrap"></pre>
+</div>
+
+
 <!-- Footer Branding -->
 <footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
-    © 2025 CKC Systems. All rights reserved.
+    © 2025 KitaKeeps. All rights reserved.
 </footer>

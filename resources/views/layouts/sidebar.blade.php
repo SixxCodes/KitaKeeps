@@ -2,7 +2,7 @@
     $role = Auth::user()->role ?? null;
 @endphp
 
-<div class="flex flex-col w-64 min-h-screen text-white bg-blue-600">
+<div class="flex flex-col w-64 min-h-screen text-white bg-blue-600 dark:bg-gray-800">
     <!-- Logo and Name -->
     <div class="flex items-center px-6 py-3 space-x-3 border-b border-blue-700">
         <img src="assets/images/logo/logo-removebg-preview.png" alt="Logo" class="w-10 h-10" />

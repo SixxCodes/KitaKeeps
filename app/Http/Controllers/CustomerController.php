@@ -90,103 +90,102 @@ class CustomerController extends Controller
     }
 
     public function exportCustomers()
-{
-    $branchId = session('current_branch_id');
-    if (!$branchId) {
-        return redirect()->back()->with('error', 'No branch selected.');
+    {
+        $branchId = session('current_branch_id');
+        if (!$branchId) {
+            return redirect()->back()->with('error', 'No branch selected.');
+        }
+
+        // Fetch customers
+        $customers = Customer::where('branch_id', $branchId)->get();
+
+        // Fetch credits from sales
+        $credits = $customers->map(function ($customer) {
+            $creditSales = $customer->sales()->where('payment_type', 'Credit')->get();
+
+            $totalCredit = $creditSales->sum('total_amount'); // total unpaid amount
+            $nextDue = $creditSales->sortBy('due_date')->first()?->due_date;
+
+            return (object)[
+                'customer_id' => $customer->customer_id,
+                'cust_name'   => $customer->cust_name,
+                'total_credit'=> $totalCredit,
+                'next_due_date'=> $nextDue,
+            ];
+        });
+
+        // Create spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+        // === Sheet 1: Customer Credits ===
+        $sheet1 = $spreadsheet->getActiveSheet();
+        $sheet1->setTitle('Customer Credits');
+
+        $headers = ['#', 'ID', 'Customer Name', 'Total Credit', 'Next Due Date'];
+        $sheet1->fromArray([$headers], null, 'A1');
+
+        $row = 2;
+        foreach ($credits as $index => $credit) {
+            $sheet1->fromArray([
+                $index + 1,
+                $credit->customer_id,
+                $credit->cust_name,
+                number_format($credit->total_credit, 2),
+                $credit->next_due_date ? $credit->next_due_date->format('Y-m-d') : '-',
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        // Style headers
+        $headerStyle = $sheet1->getStyle('A1:E1');
+        $headerStyle->getFont()->setBold(true);
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        foreach (range('A', 'E') as $col) {
+            $sheet1->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // === Sheet 2: Customer Details ===
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Customer Details');
+
+        $headers = ['#', 'ID', 'Customer Name', 'Contact Number', 'Address'];
+        $sheet2->fromArray([$headers], null, 'A1');
+
+        $row = 2;
+        foreach ($customers as $index => $customer) {
+            $sheet2->fromArray([
+                $index + 1,
+                $customer->customer_id,
+                $customer->cust_name,
+                $customer->cust_contact ?? '-',
+                $customer->cust_address ?? '-',
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        // Style headers
+        $headerStyle2 = $sheet2->getStyle('A1:E1');
+        $headerStyle2->getFont()->setBold(true);
+        $headerStyle2->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle2->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle2->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        foreach (range('A', 'E') as $col) {
+            $sheet2->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Export
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'customers.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename);
     }
-
-    // Fetch customers
-    $customers = Customer::where('branch_id', $branchId)->get();
-
-    // Fetch credits from sales
-    $credits = $customers->map(function ($customer) {
-        $creditSales = $customer->sales()->where('payment_type', 'Credit')->get();
-
-        $totalCredit = $creditSales->sum('total_amount'); // total unpaid amount
-        $nextDue = $creditSales->sortBy('due_date')->first()?->due_date;
-
-        return (object)[
-            'customer_id' => $customer->customer_id,
-            'cust_name'   => $customer->cust_name,
-            'total_credit'=> $totalCredit,
-            'next_due_date'=> $nextDue,
-        ];
-    });
-
-    // Create spreadsheet
-    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-
-    // === Sheet 1: Customer Credits ===
-    $sheet1 = $spreadsheet->getActiveSheet();
-    $sheet1->setTitle('Customer Credits');
-
-    $headers = ['#', 'ID', 'Customer Name', 'Total Credit', 'Next Due Date'];
-    $sheet1->fromArray([$headers], null, 'A1');
-
-    $row = 2;
-    foreach ($credits as $index => $credit) {
-        $sheet1->fromArray([
-            $index + 1,
-            $credit->customer_id,
-            $credit->cust_name,
-            number_format($credit->total_credit, 2),
-            $credit->next_due_date ? $credit->next_due_date->format('Y-m-d') : '-',
-        ], null, "A{$row}");
-        $row++;
-    }
-
-    // Style headers
-    $headerStyle = $sheet1->getStyle('A1:E1');
-    $headerStyle->getFont()->setBold(true);
-    $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-    $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setARGB('FFE2EFDA');
-    $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-
-    foreach (range('A', 'E') as $col) {
-        $sheet1->getColumnDimension($col)->setAutoSize(true);
-    }
-
-    // === Sheet 2: Customer Details ===
-    $sheet2 = $spreadsheet->createSheet();
-    $sheet2->setTitle('Customer Details');
-
-    $headers = ['#', 'ID', 'Customer Name', 'Contact Number', 'Address'];
-    $sheet2->fromArray([$headers], null, 'A1');
-
-    $row = 2;
-    foreach ($customers as $index => $customer) {
-        $sheet2->fromArray([
-            $index + 1,
-            $customer->customer_id,
-            $customer->cust_name,
-            $customer->cust_contact ?? '-',
-            $customer->cust_address ?? '-',
-        ], null, "A{$row}");
-        $row++;
-    }
-
-    // Style headers
-    $headerStyle2 = $sheet2->getStyle('A1:E1');
-    $headerStyle2->getFont()->setBold(true);
-    $headerStyle2->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-    $headerStyle2->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                ->getStartColor()->setARGB('FFE2EFDA');
-    $headerStyle2->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
-
-    foreach (range('A', 'E') as $col) {
-        $sheet2->getColumnDimension($col)->setAutoSize(true);
-    }
-
-    // Export
-    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-    $filename = 'customers.xlsx';
-
-    return response()->streamDownload(function () use ($writer) {
-        $writer->save('php://output');
-    }, $filename);
-}
-
 
 }
