@@ -4,11 +4,11 @@
 FROM node:18 AS frontend
 WORKDIR /app
 
-# Copy only package files for faster npm install
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy frontend source and config
+# Copy frontend source and Vite config
 COPY resources/js ./resources/js
 COPY resources/css ./resources/css
 COPY vite.config.js ./
@@ -21,10 +21,10 @@ RUN npm run build
 # =========================
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install system dependencies including libcurl dev headers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl unzip libpq-dev libonig-dev libzip-dev zip \
-    libxml2-dev zlib1g-dev libicu-dev g++ \
+    libxml2-dev zlib1g-dev libicu-dev g++ libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions needed by Laravel
@@ -43,7 +43,7 @@ COPY . .
 # Copy built frontend assets from Stage 1
 COPY --from=frontend /app/public/build ./public/build
 
-# Set permissions for Laravel storage & cache
+# Set permissions for storage & cache
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
@@ -53,7 +53,7 @@ ENV COMPOSER_MEMORY_LIMIT=-1
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader -vvv
 
-# Optimize Laravel caches for production
+# Optimize Laravel caches
 RUN php artisan key:generate \
     && php artisan config:cache \
     && php artisan route:cache \
