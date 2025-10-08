@@ -9,6 +9,7 @@ use App\Models\UserBranch;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
@@ -16,7 +17,7 @@ class EmployeeController extends Controller
     {
         $positionLower = strtolower($request->position);
 
-        // Validation rules
+        // Validation
         $rules = [
             'firstname' => 'required|string|max:100',
             'lastname'  => 'required|string|max:100',
@@ -29,7 +30,6 @@ class EmployeeController extends Controller
             'employee_image_path' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ];
 
-        // Extra rules for Cashier/Admin
         if (in_array($positionLower, ['cashier', 'admin'])) {
             $rules['username'] = 'required|string|max:50|unique:user,username';
             $rules['password'] = 'required|string|min:6';
@@ -53,30 +53,27 @@ class EmployeeController extends Controller
             'gender'    => $validated['gender'],
         ]);
 
-        // Determine current branch of owner
+        // Determine current branch
         $owner = Auth::user();
         $userBranches = $owner->branches;
         $mainBranch = $userBranches->sortBy('branch_id')->first();
-        $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
-            ?? $mainBranch;
+        $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first() ?? $mainBranch;
 
         if (!$currentBranch) {
             return redirect()->back()->withErrors('No active branch found for this owner.');
         }
 
-        // Prepare employee data
-        $employeeData = [
+        // Create Employee
+        $employee = Employee::create([
             'person_id' => $person->person_id,
             'position'  => $validated['position'],
             'daily_rate'=> $validated['daily_rate'],
             'hire_date' => now(),
             'employee_image_path' => $imagePath,
-            'branch_id' => $currentBranch->branch_id, // ✅ Always assign branch_id
-        ];
+            'branch_id' => $currentBranch->branch_id,
+        ]);
 
-        $employee = Employee::create($employeeData);
-
-        // If Cashier/Admin → also create User + assign branch via pivot
+        // If Cashier/Admin → create linked user & assign same image
         if (in_array($positionLower, ['cashier', 'admin'])) {
             $user = User::create([
                 'username'  => $validated['username'],
@@ -84,10 +81,9 @@ class EmployeeController extends Controller
                 'role'      => $positionLower,
                 'person_id' => $person->person_id,
                 'is_active' => true,
-                'user_image_path'=> $imagePath, 
+                'user_image_path'=> $imagePath,
             ]);
 
-            // Assign this branch in pivot
             $user->branches()->sync([$currentBranch->branch_id]);
         }
 
@@ -141,7 +137,7 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($employee_id);
         $person = $employee->person;
 
-        // Validate input
+        // Validate
         $request->validate([
             'firstname' => 'required|string|max:255',
             'lastname' => 'required|string|max:255',
@@ -150,7 +146,7 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:255',
             'daily_rate' => 'required|numeric|min:0',
-            'employee_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // 2MB max
+            'employee_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         // Update person
@@ -164,23 +160,22 @@ class EmployeeController extends Controller
         ]);
 
         // Update employee
-        $employee->update([
-            'daily_rate' => $request->daily_rate,
-        ]);
+        $employee->update(['daily_rate' => $request->daily_rate]);
 
-        // Update profile image if uploaded
+        // Handle image update
         if ($request->hasFile('employee_image')) {
-            // Delete old employee image if exists
-            if ($employee->employee_image_path && \Storage::disk('public')->exists($employee->employee_image_path)) {
-                \Storage::disk('public')->delete($employee->employee_image_path);
+            // Delete old image
+            if ($employee->employee_image_path && Storage::disk('public')->exists($employee->employee_image_path)) {
+                Storage::disk('public')->delete($employee->employee_image_path);
             }
 
+            // Store new image
             $path = $request->file('employee_image')->store('employees', 'public');
 
-            // Update employee image path
+            // Update employee image
             $employee->update(['employee_image_path' => $path]);
 
-            // If Cashier/Admin, also update the linked user's image
+            // 🔁 Sync to user image if exists
             if (in_array(strtolower($employee->position), ['cashier', 'admin']) && $person && $person->user) {
                 $person->user->update(['user_image_path' => $path]);
             }
@@ -188,6 +183,7 @@ class EmployeeController extends Controller
 
         return redirect()->back()->with('success', 'Employee updated successfully!');
     }
+
 
     public function destroy($employee_id)
     {

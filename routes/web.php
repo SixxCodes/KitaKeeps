@@ -15,6 +15,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\CustomerCreditController;
 use App\Http\Controllers\AttendanceEmployeeExportController;
+use App\Http\Controllers\UserController;
 
 Route::post('/register-frontend', [RegisterUserController::class, 'register']);
 
@@ -108,6 +109,11 @@ Route::get('/employees/export', [AttendanceEmployeeExportController::class, 'exp
 
 Route::get('/forecast/{branch}', [App\Http\Controllers\ForecastController::class, 'show'])
     ->name('forecast.show');
+
+// User
+Route::post('/user/update-profile', [UserController::class, 'updateProfile'])
+    ->name('user.updateProfile')
+    ->middleware('auth');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -564,27 +564,19 @@
                                 <td class="flex justify-center gap-2 px-3 py-2 border">
 
                                     <!-- Pay Form -->
-                                    <form action="{{ route('sales.pay', $sale->sale_id) }}" method="POST">
-                                        @csrf
                                         <button type="submit" 
                                             class="px-2 py-1 text-white bg-green-500 rounded hover:bg-green-600"
-                                            onclick="return confirm('Are you sure you want to pay this credit?')"
-                                        >
+                                                x-on:click="$dispatch('open-modal', 'confirm-pay-{{ $sale->sale_id }}')"                                        >
                                             <i class="fa-solid fa-peso-sign"></i> Pay
                                         </button>
-                                    </form>
 
                                     <!-- Delete Form -->
-                                    <form action="{{ route('sales.destroy', $sale->sale_id) }}" method="POST">
-                                        @csrf
-                                        @method('DELETE')
                                         <button type="submit" 
                                             class="px-2 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                                            onclick="return confirm('Are you sure you want to delete this credit?')"
+                                            x-on:click="$dispatch('open-modal', 'confirm-delete-{{ $sale->sale_id }}')"
                                         >
                                             <i class="fa-solid fa-trash"></i> Delete
                                         </button>
-                                    </form>
 
                                 </td>
                             </tr>
@@ -597,27 +589,20 @@
                             <td class="flex justify-center gap-2 px-3 py-2 border">
 
                                 <!-- Pay All Form -->
-                                <form action="{{ route('sales.payAll', $customer->customer_id) }}" method="POST">
-                                    @csrf
                                     <button type="submit" 
                                         class="px-2 py-1 text-white bg-green-600 rounded hover:bg-green-700"
-                                        onclick="return confirm('Are you sure you want to pay all credits?')"
+                                        x-on:click="$dispatch('open-modal', 'confirm-pay-all-{{ $customer->customer_id }}')"
                                     >
                                         <i class="fa-solid fa-money-bill-wave"></i> Pay All
                                     </button>
-                                </form>
 
                                 <!-- Delete All Form -->
-                                <form action="{{ route('sales.destroyAll', $customer->customer_id) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
                                     <button type="submit" 
                                         class="px-2 py-1 text-white bg-red-600 rounded hover:bg-red-700"
-                                        onclick="return confirm('Are you sure you want to delete all credits?')"
+                                        x-on:click="$dispatch('open-modal', 'confirm-delete-all-{{ $customer->customer_id }}')"
                                     >
                                         <i class="fa-solid fa-trash"></i> Delete All
                                     </button>
-                                </form>
 
                             </td>
                         </tr>
@@ -637,6 +622,128 @@
         </div>
     </x-modal>
 @endforeach
+
+<!-- Pay -->
+@foreach($creditCustomers as $customer)
+    @foreach($customer->sales as $sale)
+        <x-modal name="confirm-pay-{{ $sale->sale_id }}" :show="false" maxWidth="sm">
+            <div class="p-6 text-center">
+                <i class="mx-auto text-4xl text-yellow-400 fa-solid fa-triangle-exclamation"></i>
+                <h2 class="mt-3 text-lg font-semibold text-gray-800">Confirm Payment</h2>
+                <p class="mt-1 text-gray-600">Pay credit for Sale #{{ $sale->sale_id }}?</p>
+
+                <div class="flex justify-center mt-4 space-x-3">
+                    <button 
+                        x-on:click="$dispatch('close-modal', 'confirm-pay-{{ $sale->sale_id }}')"
+                        class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                        Cancel
+                    </button>
+
+                    <form action="{{ route('sales.pay', $sale->sale_id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 text-white transition bg-green-600 rounded hover:bg-green-700">
+                            Yes, Pay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </x-modal>
+    @endforeach
+@endforeach
+
+<!-- Delete -->
+@foreach($creditCustomers as $customer)
+    @foreach($customer->sales as $sale)
+        <x-modal name="confirm-delete-{{ $sale->sale_id }}" :show="false" maxWidth="sm">
+            <div class="p-6 text-center">
+                <i class="mx-auto text-4xl text-red-500 fa-solid fa-trash"></i>
+                <h2 class="mt-3 text-lg font-semibold text-gray-800">Confirm Deletion</h2>
+                <p class="mt-1 text-gray-600">Delete credit for Sale #{{ $sale->sale_id }}?</p>
+
+                <div class="flex justify-center mt-4 space-x-3">
+                    <button 
+                        x-on:click="$dispatch('close-modal', 'confirm-delete-{{ $sale->sale_id }}')"
+                        class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                        Cancel
+                    </button>
+
+                    <form action="{{ route('sales.destroy', $sale->sale_id) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="px-4 py-2 text-white transition bg-red-600 rounded hover:bg-red-700">
+                            Yes, Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </x-modal>
+    @endforeach
+@endforeach
+
+<!-- Pay All Credits -->
+@foreach($creditCustomers as $customer)
+    <x-modal name="confirm-pay-all-{{ $customer->customer_id }}" :show="false" maxWidth="sm">
+        <div class="p-6 text-center">
+            <i class="mx-auto text-4xl text-yellow-400 fa-solid fa-coins"></i>
+            <h2 class="mt-3 text-lg font-semibold text-gray-800">Confirm Pay All</h2>
+            <p class="mt-1 text-gray-600">
+                Pay all credits for <strong>{{ $customer->cust_name }}</strong>?
+            </p>
+
+            <div class="flex justify-center mt-4 space-x-3">
+                <button 
+                    x-on:click="$dispatch('close-modal', 'confirm-pay-all-{{ $customer->customer_id }}')"
+                    class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+                >
+                    Cancel
+                </button>
+
+                <form action="{{ route('sales.payAll', $customer->customer_id) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 text-white transition bg-green-600 rounded hover:bg-green-700">
+                        Yes, Pay All
+                    </button>
+                </form>
+            </div>
+        </div>
+    </x-modal>
+@endforeach
+
+<!-- Delete All Credits -->
+@foreach($creditCustomers as $customer)
+    <x-modal name="confirm-delete-all-{{ $customer->customer_id }}" :show="false" maxWidth="sm">
+        <div class="p-6 text-center">
+            <i class="mx-auto text-4xl text-red-500 fa-solid fa-trash"></i>
+            <h2 class="mt-3 text-lg font-semibold text-gray-800">Confirm Delete All</h2>
+            <p class="mt-1 text-gray-600">
+                Delete all unpaid credits for <strong>{{ $customer->cust_name }}</strong>?
+            </p>
+
+            <div class="flex justify-center mt-4 space-x-3">
+                <button 
+                    x-on:click="$dispatch('close-modal', 'confirm-delete-all-{{ $customer->customer_id }}')"
+                    class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+                >
+                    Cancel
+                </button>
+
+                <form action="{{ route('sales.destroyAll', $customer->customer_id) }}" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 text-white transition bg-red-600 rounded hover:bg-red-700">
+                        Yes, Delete All
+                    </button>
+                </form>
+            </div>
+        </div>
+    </x-modal>
+@endforeach
+
+
+
+
 
 
 

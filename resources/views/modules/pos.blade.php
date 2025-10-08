@@ -86,11 +86,11 @@
 <!-- Module Header -->
 <div class="flex items-center justify-between">
 
-    <!-- @if($errors->any())
+    @if($errors->any())
         <div class="p-2 mt-2 text-sm text-red-700 bg-red-100 rounded">
             {{ $errors->first() }}
         </div>
-    @endif -->
+    @endif
 
     <div class="flex flex-col mr-5">
         <div class="flex items-center space-x-2">
@@ -333,8 +333,8 @@
             <input type="hidden" id="selected_customer_id" name="customer_id">
             <input type="hidden" id="selected_customer_address" name="customer_address">
 
-            <p class="hidden">Selected Customer: 
-                <span id="selected_customer_name" class="hidden font-medium text-gray-800">None</span>
+            <p>Selected Customer: 
+                <span id="selected_customer_name" class="font-medium text-gray-800">None</span>
             </p>
 
             @forelse ($customers as $customer)
@@ -345,12 +345,16 @@
                     data-name="{{ $customer->cust_name }}"
                     data-address="{{ $customer->cust_address ?? '' }}"
                     x-on:click="
-                        selectedCustomerId = $el.dataset.id;
-                        document.querySelector('#selected_customer_id').value = $el.dataset.id;
-                        document.querySelector('#selected_customer_name').textContent = $el.dataset.name;
-                        document.querySelector('#selected_customer_address').value = $el.dataset.address;
-                        setTimeout(() => $dispatch('close-modal', 'add-customer-sale'), 200);
-                    "
+                            selectedCustomerId = $el.dataset.id;
+                            document.querySelector('#selected_customer_id').value = $el.dataset.id;
+                            document.querySelector('#selected_customer_name').textContent = $el.dataset.name;
+                            document.querySelector('#selected_customer_address').value = $el.dataset.address;
+
+                            // ✅ Sync with POS main form
+                            document.querySelector('#selectedCustomerId').value = $el.dataset.id;
+
+                            setTimeout(() => $dispatch('close-modal', 'add-customer-sale'), 200);
+                        "
                 >
                     @if($customer->cust_image_path)
                         <img src="{{ asset('storage/' . $customer->cust_image_path) }}" 
