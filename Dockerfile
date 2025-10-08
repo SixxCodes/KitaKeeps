@@ -72,5 +72,10 @@ EXPOSE 80
 # Enable Apache rewrite module (needed by Laravel)
 RUN a2enmod rewrite headers expires deflate
 
+# Set Apache to serve from Laravel's public directory and set ServerName
+RUN sed -i 's#/var/www/html#/var/www/html/public#g' /etc/apache2/sites-available/000-default.conf \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && sed -i "s/DirectoryIndex .*/DirectoryIndex index.php index.html/g" /etc/apache2/mods-enabled/dir.conf
+
 # Start Apache in foreground (image default entrypoint uses apache2-foreground)
 CMD ["apache2-foreground"]
