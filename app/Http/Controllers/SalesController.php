@@ -12,6 +12,7 @@ use App\Models\PaymentSale;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\BranchProduct;
+use App\Jobs\GenerateForecast;
 
 class SalesController extends Controller
 {
@@ -88,7 +89,26 @@ class SalesController extends Controller
                     }
                     $branchProduct->save();
                 }
+
+                // 2.5. Update or create Forecast record for this product
+                \App\Models\Forecast::updateOrCreate(
+                    [
+                        'branch_product_id' => $item['branch_product_id'],
+                        // Define current forecast period (e.g., this week)
+                        'period_start' => now()->startOfWeek(),
+                        'period_end' => now()->endOfWeek(),
+                    ],
+                    [
+                        // Adjust forecast quantity by sales made
+                        'forecast_qty' => $item['qty'], // This is a placeholder. You might want to calculate this based on historical data.
+                        'method' => 'auto',
+                        'notes' => 'Updated by SalesController after sale #' . $sale->sale_id,
+                    ]
+                );
+
             }
+
+            // \App\Jobs\GenerateForecast::dispatch($branchId);
 
             // 3. Handle Payment if Cash
             if ($validated['payment_method'] === 'Cash') {

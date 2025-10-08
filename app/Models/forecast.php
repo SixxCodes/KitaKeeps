@@ -21,6 +21,9 @@ class Forecast extends Model
         'notes',
     ];
 
+    // no timestamps
+    public $timestamps = false;
+
     // Casts for proper data types
     protected $casts = [
         'period_start' => 'date',
@@ -36,4 +39,5 @@ class Forecast extends Model
     {
         return $this->belongsTo(BranchProduct::class, 'branch_product_id', 'branch_product_id');
     }
+
 }

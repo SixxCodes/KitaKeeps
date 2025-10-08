@@ -22,6 +22,23 @@
         ->get();
 @endphp
 
+@php    
+    $owner = auth()->user();
+    $userBranches = $owner ? $owner->branches : collect();
+
+    // current branch (session fallback to first branch)
+    $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
+                    ?? $userBranches->sortBy('branch_id')->first();
+
+    // Use the 'private' disk
+    $filePath = "forecasts/branch_{$currentBranch->branch_id}.txt";
+
+    $forecastText = Storage::disk('private')->exists($filePath)
+        ? Storage::disk('private')->get($filePath)
+        : "No AI forecast has been generated yet for this branch.";
+@endphp
+
+
 <!-- Module Header -->
 <div class="flex items-center justify-between">
     <div class="flex flex-col mr-5">
@@ -132,7 +149,15 @@
 <div class="p-6 bg-white rounded shadow">
     <h2 class="mb-4 text-xl font-semibold">AI Forecast Summary</h2>
 
-    <pre class="text-gray-700 whitespace-pre-wrap"></pre>
+    <div class="p-6 bg-white rounded shadow">
+        <h1 class="mb-4 text-2xl font-bold">
+            AI Forecast for {{ $currentBranch->branch_name ?? 'No Branch' }}
+        </h1>
+
+        <pre class="p-4 whitespace-pre-wrap border rounded bg-gray-50">
+            {{ $forecastText }}
+        </pre>
+    </div>
 </div>
 
 

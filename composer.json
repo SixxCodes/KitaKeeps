@@ -9,6 +9,7 @@
         "php": "^8.2",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.10.1",
+        "openai-php/laravel": "^0.17.1",
         "phpoffice/phpspreadsheet": "1.28",
         "rap2hpoutre/fast-excel": "^5.6"
     },

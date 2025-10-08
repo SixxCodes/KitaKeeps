@@ -101,6 +101,9 @@ Route::get('/employees/export', [AttendanceEmployeeExportController::class, 'exp
     ->name('employees.export')
     ->middleware('auth');
 
+Route::get('/forecast/{branch}', [App\Http\Controllers\ForecastController::class, 'show'])
+    ->name('forecast.show');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
