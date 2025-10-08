@@ -56,14 +56,12 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 ENV COMPOSER_MEMORY_LIMIT=-1
 
 # Install PHP dependencies
-# Print PHP version and loaded extensions so build logs confirm gd and other extensions are enabled
-RUN php -v && php -m
-
-# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader -vvv
 
-# Optimize Laravel caches
-RUN php artisan key:generate \
+# Ensure an environment file exists for artisan commands during build, then optimize caches
+RUN if [ -f .env.example ]; then cp .env.example .env; fi \
+    && chown www-data:www-data .env || true \
+    && php artisan key:generate --force \
     && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
