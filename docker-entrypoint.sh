@@ -14,6 +14,16 @@ cd /var/www/html
 # Ensure permissions
 chown -R www-data:www-data storage bootstrap/cache || true
 
+# Debug: show public/build at runtime
+echo "--- runtime public/build ---"
+ls -la public/build || echo "public/build not found"
+if [ -f public/build/manifest.json ]; then
+  echo "--- runtime manifest.json ---"
+  cat public/build/manifest.json || true
+else
+  echo "runtime manifest.json not found"
+fi
+
 # Generate APP_KEY if missing
 if [ -z "${APP_KEY}" ] || [ "${APP_KEY}" = "" ]; then
   php artisan key:generate --force || true

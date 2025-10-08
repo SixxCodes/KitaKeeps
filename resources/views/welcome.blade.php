@@ -23,9 +23,14 @@
     
     <!-- Font Awesome’s icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Vite built CSS/JS (production) -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- CSS -->
-    <!-- <link rel="stylesheet" href="{{ asset('assets/css/landing-page.css') }}"> -->
+    {{-- Also include legacy landing-page.css from public/assets if you kept a custom stylesheet there --}}
+    @if (file_exists(public_path('assets/css/landing-page.css')))
+        <link rel="stylesheet" href="{{ asset('assets/css/landing-page.css') }}">
+    @endif
 </head>
 
 <body class="bg-gradient-to-b from-blue-50 to-white">
