@@ -16,6 +16,10 @@ COPY vite.config.js ./
 # Build production assets
 RUN npm run build
 
+# Debug: show built assets (temporary) to help diagnose missing CSS/JS in production
+RUN echo "--- frontend build output ---" && ls -la public/build || true
+RUN if [ -f public/build/manifest.json ]; then echo "--- manifest.json ---" && cat public/build/manifest.json || true; else echo "no manifest.json found"; fi
+
 # =========================
 # Stage 2 - Backend (Laravel + PHP + Composer)
 # =========================
