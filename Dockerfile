@@ -4,7 +4,7 @@
 FROM node:18 AS frontend
 WORKDIR /app
 
-# Copy only package files first for faster builds
+# Copy package files first for faster npm install
 COPY package*.json ./
 RUN npm install
 
@@ -21,11 +21,22 @@ RUN npm run build
 # =========================
 FROM php:8.2-fpm
 
-# Install system dependencies and PHP extensions (before composer)
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     git curl unzip libpq-dev libonig-dev libzip-dev zip \
     libxml2-dev zlib1g-dev libicu-dev g++ \
-    && docker-php-ext-install pdo_mysql mbstring zip bcmath intl xml
+    && docker-php-ext-install \
+        pdo_mysql \
+        mbstring \
+        zip \
+        bcmath \
+        intl \
+        xml \
+        ctype \
+        tokenizer \
+        opcache \
+        fileinfo \
+        curl
 
 # Install Composer globally
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -39,12 +50,14 @@ COPY . .
 # Copy built frontend assets from Stage 1
 COPY --from=frontend /app/public/build ./public/build
 
-# Set permissions for storage and cache
+# Set permissions for storage & cache
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Increase Composer memory limit and install PHP dependencies
+# Increase Composer memory limit
 ENV COMPOSER_MEMORY_LIMIT=-1
+
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader -vvv
 
 # Optimize Laravel caches
