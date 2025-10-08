@@ -58,16 +58,7 @@
                 <i class="text-lg fa-solid fa-xmark"></i>
             </span>
         </div>  
-
-        @if ($errors->any())
-            <div class="p-2 mb-2 text-red-700 bg-red-100 rounded">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+        
         <!-- Form -->
         <form method="POST" action="{{ route('employees.store') }}" enctype="multipart/form-data" class="space-y-4 text-sm"
             x-data="{ position: '' }">
@@ -113,7 +104,7 @@
                 <div>
                     <label class="block mb-1 text-gray-800">Gender</label>
                     <select required name="gender" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500">
-                        <option value="">Select Gender</option>
+                        <option value="" disabled selected>Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
@@ -123,7 +114,15 @@
                 <!-- Contact Number -->
                 <div>
                     <label class="block mb-1 text-gray-800">Contact Number</label>
-                    <input required name="contact_number" type="text" placeholder="+63 912 345 6789" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
+                    <input 
+                            maxlength="11"
+                            pattern="\d{11}"
+                            title="Contact number must be exactly 11 digits" 
+                            required 
+                            name="contact_number" 
+                            type="text" 
+                            placeholder="09123456789"
+                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
                 </div>
 
                 <!-- Email -->
@@ -145,21 +144,27 @@
             <fieldset class="p-4 border border-gray-200 rounded-lg">
                 <legend class="font-semibold text-gray-700">Job Information</legend>
                 <div class="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
-                    <!-- Position -->
+                    <!-- Position Dropdown -->
                     <div>
                         <label class="block mb-1 text-gray-800">Position</label>
-                        <input required type="text" name="position" placeholder="Cashier"
-                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                            x-model="position">
+                        <select required name="position" x-model="position"
+                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500">
+                            <option value="" disabled selected>Select Position</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Cashier">Cashier</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
 
                     <!-- Daily Salary -->
                     <div>
                         <label class="block mb-1 text-gray-800">Daily Salary</label>
-                        <input required type="number" name="daily_rate" placeholder="500" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
+                        <input required type="number" name="daily_rate" placeholder="500"
+                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
                     </div>
                 </div>
                 
+                <!-- Username & Password for Admin/Cashier -->
                 <div x-show="position.toLowerCase() === 'cashier' || position.toLowerCase() === 'admin'" class="grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
                     <!-- Username -->
                     <div>
@@ -928,7 +933,7 @@
                 </button>
 
                 <button type="submit" 
-                    class="px-3 py-1 text-white transition bg-blue-600 rounded hover:bg-blue-700">
+                    class="px-3 py-1 text-white transition bg-green-600 rounded hover:bg-green-700">
                     Update
                 </button>
             </div>

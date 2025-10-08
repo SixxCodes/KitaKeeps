@@ -294,13 +294,15 @@
                             <i class="fa-solid fa-pen"></i>
                         </button>
                         
-                        <!-- Delete btn -->
+                        <!-- Delete btn (only if not main branch) -->
+                        @if($branch->branch_id != $mainBranch->branch_id)
                         <button 
                             x-on:click="$dispatch('open-modal', 'delete-branch-{{ $branch->branch_id }}')" 
                             class="px-2 py-1 text-white bg-red-500 rounded"
                         >
                             <i class="fa-solid fa-trash"></i>
                         </button>
+                        @endif
                     </td>
                 </tr>
                 @empty

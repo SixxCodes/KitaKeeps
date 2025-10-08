@@ -59,9 +59,9 @@
 
 <!-- User Profile Modal -->
 <x-modal name="user-profile" :show="false" maxWidth="sm">
-    <div class="p-6">
+    <div class="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-semibold text-blue-900 dark:text-gray-100">Your Profile</h2>
             <button 
                 type="button" 
@@ -78,26 +78,38 @@
                 <img 
                     src="{{ asset(Auth::user()->user_image_path) }}" 
                     alt="User photo" 
-                    class="object-cover w-24 h-24 border rounded-full shadow"
+                    class="object-cover border-2 border-blue-200 rounded-full shadow-md w-28 h-28"
                 >
             @else
                 <!-- Fallback icon if no image -->
-                <i class="flex items-center justify-center w-24 h-24 text-3xl text-white bg-blue-200 rounded-full fa-solid fa-user"></i>
+                <div class="flex items-center justify-center text-4xl text-white bg-blue-200 rounded-full shadow-md w-28 h-28">
+                    <i class="fa-solid fa-user"></i>
+                </div>
             @endif
         </div>
 
         <!-- Username -->
         <div class="mb-4 text-center">
-            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">Username</label>
-            <p class="font-medium text-gray-800 dark:text-gray-100">{{ Auth::user()->username }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Username</p>
+            <p class="font-semibold text-gray-800 dark:text-gray-100">{{ Auth::user()->username }}</p>
         </div>
 
         <!-- Role and Branch -->
-        <div class="mb-4 text-center">
+        <div class="mb-6 space-y-1 text-center">
             <p class="text-gray-600 dark:text-gray-400">{{ ucfirst(Auth::user()->role) }}</p>
             <p class="text-gray-600 dark:text-gray-400">
                 {{ Auth::user()->branches->pluck('branch_name')->join(', ') ?: 'No Branch' }}
             </p>
         </div>
+
+        <!-- Logout Button -->
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" 
+                class="flex items-center px-4 py-2 mx-auto text-white transition bg-gray-600 rounded-lg shadow hover:bg-gray-700">
+                <i class="mr-2 fa-solid fa-right-from-bracket"></i>
+                Logout
+            </button>
+        </form>
     </div>
 </x-modal>

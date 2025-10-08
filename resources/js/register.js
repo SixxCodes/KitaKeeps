@@ -85,7 +85,7 @@ const app = createApp({
                 this.passwordError = 'Password is required.';
             } else if (this.password.length < 8) {
                 this.passwordError = 'Password must be at least 8 characters.';
-            } else if (!/(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(this.password)) {
+            } else if (!/(?=.*[A-Z])(?=.*\d)(?=.*[ !"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/.test(this.password)) {
                 this.passwordError = 'Password must include at least one uppercase letter, one number, and one special character.';
             }
 

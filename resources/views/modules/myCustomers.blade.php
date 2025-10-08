@@ -235,7 +235,13 @@
                     <!-- Contact Number -->
                     <div class="sm:col-span-2">
                         <label class="block mb-1 text-gray-800">Contact Number</label>
-                        <input required type="text" name="cust_contact" placeholder="+63 912 345 6789"
+                        <input placeholder="09123456789"
+                                maxlength="11"
+                                pattern="\d{11}"
+                                title="Contact number must be exactly 11 digits" 
+                                required 
+                                type="text" 
+                                name="cust_contact"
                             class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500" />
                     </div>
 
@@ -826,7 +832,7 @@
         <div class="flex justify-end pt-4">
             <button 
                 x-on:click="$dispatch('close-modal', 'view-customer-{{ $customer->customer_id }}')"
-                class="px-4 py-2 text-white transition bg-green-600 rounded hover:bg-green-700"
+                class="px-4 py-2 text-white transition bg-gray-600 rounded hover:bg-gray-700"
             >
                 Close
             </button>

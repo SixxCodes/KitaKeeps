@@ -323,7 +323,7 @@
             </section>
 
             <!-- CTA Section -->
-            <section class="py-20 bg-blue-50">
+            <!-- <section class="py-20 bg-blue-50">
                 <div class="container px-4 mx-auto sm:px-6 lg:px-8">
 
                     <div class="px-8 py-16 overflow-hidden text-center bg-blue-600 shadow-2xl rounded-2xl shadow-blue-500/20 fade-in">
@@ -346,7 +346,7 @@
                         </p>
                     </div>
                 </div>
-            </section>
+            </section> -->
 
             <!-- Footer -->
             <footer id="contact" class="text-white bg-gray-900">

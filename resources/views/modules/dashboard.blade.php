@@ -535,7 +535,7 @@
                 class="px-3 py-1 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
 
                 <button type="submit" 
-                class="px-3 py-1 text-white transition bg-blue-600 rounded hover:bg-blue-700">Save</button>
+                class="px-3 py-1 text-white transition bg-green-600 rounded hover:bg-green-700">Save</button>
             </div>
         </form>
     </div>

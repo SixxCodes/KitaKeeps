@@ -328,35 +328,53 @@
             Add new customer
         </button>
 
-        @forelse ($customers as $customer)
-            <button
-                type="button"
-                class="flex items-center w-full p-2 mb-4 space-x-3 rounded shadow cursor-pointer hover:bg-gray-300"
-                onclick="selectCustomer('{{ $customer->customer_id }}', '{{ $customer->cust_name }}')"
-            >
-                @if($customer->cust_image_path)
-                    <img 
-                        src="{{ asset('storage/' . $customer->cust_image_path) }}" 
-                        alt="{{ $customer->cust_name }}" 
-                        class="object-cover w-8 h-8 rounded-full"
-                    >
-                @else
-                    <div class="flex items-center justify-center w-8 h-8 text-white bg-blue-200 rounded-full">
-                        <i class="fa-solid fa-user"></i>
+        <div x-data="{ selectedCustomerId: null }">
+            <!-- Hidden input + display -->
+            <input type="hidden" id="selected_customer_id" name="customer_id">
+            <input type="hidden" id="selected_customer_address" name="customer_address">
+
+            <p class="hidden">Selected Customer: 
+                <span id="selected_customer_name" class="hidden font-medium text-gray-800">None</span>
+            </p>
+
+            @forelse ($customers as $customer)
+                <button
+                    type="button"
+                    class="flex items-center w-full p-2 mb-4 space-x-3 rounded shadow cursor-pointer hover:bg-gray-300"
+                    data-id="{{ $customer->customer_id }}"
+                    data-name="{{ $customer->cust_name }}"
+                    data-address="{{ $customer->cust_address ?? '' }}"
+                    x-on:click="
+                        selectedCustomerId = $el.dataset.id;
+                        document.querySelector('#selected_customer_id').value = $el.dataset.id;
+                        document.querySelector('#selected_customer_name').textContent = $el.dataset.name;
+                        document.querySelector('#selected_customer_address').value = $el.dataset.address;
+                        setTimeout(() => $dispatch('close-modal', 'add-customer-sale'), 200);
+                    "
+                >
+                    @if($customer->cust_image_path)
+                        <img src="{{ asset('storage/' . $customer->cust_image_path) }}" 
+                            alt="{{ $customer->cust_name }}" class="object-cover w-8 h-8 rounded-full">
+                    @else
+                        <div class="flex items-center justify-center w-8 h-8 text-white bg-blue-200 rounded-full">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    @endif
+
+                    <div class="flex-1 text-left">
+                        <div class="font-medium text-gray-800">{{ $customer->cust_name }}</div>
+                        <div class="text-xs text-gray-500">{{ $customer->cust_address ?? 'No address provided' }}</div>
                     </div>
-                @endif
 
-                <div class="text-left">
-                    <div class="font-medium text-gray-800">{{ $customer->cust_name }}</div>
-                    <div class="text-xs text-gray-500">{{ $customer->cust_address ?? 'No address provided' }}</div>
-                    <div class="text-xs text-gray-500">Total Credits: {{ $customer->total_credits ?? 0 }}</div>
-                </div>
-            </button>
-        @empty
-            <div class="p-2 text-sm text-center text-gray-500">No customers found.</div>
-        @endforelse
+                    <!-- Checkmark: shows only if this button is the selected customer -->
+                    <i x-show="selectedCustomerId == '{{ $customer->customer_id }}'" class="text-green-600 fa-solid fa-check"></i>
+                </button>
+            @empty
+                <div class="p-2 text-sm text-center text-gray-500">No customers found.</div>
+            @endforelse
+        </div>
 
-         <!-- Pagination -->
+        <!-- Pagination -->
         <div class="flex items-center justify-between mt-4">
             <p class="text-sm">
                 Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} entries
@@ -381,7 +399,7 @@
                 Close
             </button>
 
-            <button class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+            <button class="px-4 py-2 text-white bg-green-600 rounded hover:bg-green-700"
                 x-on:click="$dispatch('close-modal', 'add-customer-sale')">
                 Done
             </button>
