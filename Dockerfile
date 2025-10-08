@@ -59,16 +59,18 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 # Increase Composer memory limit
 ENV COMPOSER_MEMORY_LIMIT=-1
 
+# Default to production unless overridden by Render env vars
+ENV APP_ENV=production
+ENV APP_DEBUG=false
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader -vvv
 
-# Ensure an environment file exists for artisan commands during build, then optimize caches
+# Ensure an environment file exists for artisan commands during build, but do NOT cache config at build time
+# (config will be cached at container start by the entrypoint so runtime env vars are used)
 RUN if [ -f .env.example ]; then cp .env.example .env; fi \
     && chown www-data:www-data .env || true \
-    && php artisan key:generate --force \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+    && php artisan key:generate --force || true
 
 # Expose HTTP port for Render to detect
 EXPOSE 80
