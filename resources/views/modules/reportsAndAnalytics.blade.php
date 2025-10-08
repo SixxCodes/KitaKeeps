@@ -107,18 +107,22 @@
         <h2 class="mb-6 text-xl font-semibold text-gray-700">Top 5 Products by Sales</h2>
         <div class="space-y-6">
             @foreach ($topProducts as $product)
-            @php
-                $percentage = $topProducts->first()->total_sold > 0 
-                    ? round($product->total_sold / $topProducts->first()->total_sold * 100)
-                    : 0;
-            @endphp
-            <div class="flex items-center space-x-4">
-                <span class="w-24 text-gray-600">{{ $product->product->prod_name ?? 'Unknown' }}</span>
-                <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
-                    <div class="h-6 bg-blue-600 rounded-full" style="width: {{ $percentage }}%;"></div>
+                @php
+                    $topProduct = $topProducts->first();
+                    $topTotalSold = $topProduct->total_sold ?? 0;
+
+                    $percentage = $topTotalSold > 0
+                        ? round(($product->total_sold / $topTotalSold) * 100)
+                        : 0;
+                @endphp
+
+                <div class="flex items-center space-x-4">
+                    <span class="w-24 text-gray-600">{{ $product->product->prod_name ?? 'Unknown' }}</span>
+                    <div class="relative flex-1 h-6 bg-blue-200 rounded-full">
+                        <div class="h-6 bg-blue-600 rounded-full" style="width: {{ $percentage }}%;"></div>
+                    </div>
+                    <span class="w-12 text-right text-gray-700">{{ $product->total_sold }}</span>
                 </div>
-                <span class="w-12 text-right text-gray-700">{{ $product->total_sold }}</span>
-            </div>
             @endforeach
         </div>
     </div>
@@ -129,16 +133,32 @@
         <div class="space-y-3">
             @foreach ($topBranches as $branch)
             @php
-                $maxSales = $topBranches->first()->total_sales ?? 1;
-                $widthPercentage = round($branch->total_sales / $maxSales * 100);
+                $topBranch = $topBranches->first();
+                $maxSales = $topBranch->total_sales ?? 0;
+
+                $widthPercentage = $maxSales > 0
+                    ? round(($branch->total_sales / $maxSales) * 100)
+                    : 0;
             @endphp
+
             <div>
                 <div class="flex justify-between mb-1">
                     <span class="text-sm font-medium text-gray-700">{{ $branch->branch_name }}</span>
                     <span class="text-sm font-medium text-gray-700">{{ number_format($branch->total_sales) }}</span>
                 </div>
+
+                @php
+                    $topBranch = $topBranches->first();
+                    $maxSales = $topBranch->total_sales ?? 0;
+
+                    $width = ($maxSales > 0 && $branch->total_sales > 0)
+                        ? ($branch->total_sales / $maxSales * 100)
+                        : 0;
+                @endphp
+                
                 <div class="w-full h-4 bg-gray-200 rounded-full">
-                    <div class="h-4 bg-blue-500 rounded-full" style="width: {{ $branch->total_sales ? ($branch->total_sales / $topBranches->first()->total_sales * 100) : 0 }}%;"></div>
+                    <div class="h-4 bg-blue-500 rounded-full" style="width: {{ $width }}%;"></div>
+
                 </div>
             </div>
             @endforeach

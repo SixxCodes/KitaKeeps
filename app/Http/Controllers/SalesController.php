@@ -13,6 +13,9 @@ use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\BranchProduct;
 use App\Jobs\GenerateForecast;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class SalesController extends Controller
 {
@@ -272,6 +275,85 @@ class SalesController extends Controller
         }
 
         return back()->with('success', 'All unpaid credits for this customer have been deleted.');
+    }
+
+    public function salesLog()
+    {
+        $sales = \App\Models\Sale::with([
+            'salebelongsTocustomer',
+            'salebelongsToUser',
+        ])
+        ->orderByDesc('sale_date')
+        ->get();
+
+        return response()->json($sales);
+    }
+
+    public function exportSales(Request $request)
+    {
+        $user = auth()->user();
+        $search = $request->query('search');
+        $sortBy = $request->query('sort_by', 'sale_date');
+        $direction = $request->query('direction', 'desc');
+
+        $userBranches = $user->branches ?? collect();
+        $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
+                        ?? $userBranches->sortBy('branch_id')->first();
+        $currentBranchId = $currentBranch?->branch_id;
+
+        // Base query
+        $sales = Sale::with(['salebelongsTocustomer', 'salebelongsToUser', 'salebelongsTobranch'])
+            ->when($user->role === 'owner', fn($q) => $q->whereIn('branch_id', $userBranches->pluck('branch_id')))
+            ->when($user->role === 'admin', fn($q) => $q->where('branch_id', $currentBranchId))
+            ->when($user->role === 'cashier', fn($q) => $q->where('created_by', $user->user_id)->where('branch_id', $currentBranchId))
+            ->when($search, function($q) use ($search) {
+                $q->where('sale_id', 'like', "%{$search}%")
+                ->orWhereHas('salebelongsTocustomer', fn($c) => $c->where('cust_name', 'like', "%{$search}%"))
+                ->orWhereHas('salebelongsToUser', fn($u) => $u->where('username', 'like', "%{$search}%"));
+            })
+            ->orderBy($sortBy, $direction)
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Headers
+        $headers = ['Sale ID', 'Customer', 'Cashier', 'Total Amount', 'Payment Type', 'Sale Date'];
+        $sheet->fromArray([$headers], null, 'A1');
+
+        // Fill rows
+        $row = 2;
+        foreach ($sales as $sale) {
+            $sheet->fromArray([
+                $sale->sale_id,
+                $sale->salebelongsTocustomer?->cust_name ?? 'Walk-in',
+                $sale->salebelongsToUser?->username ?? 'Unknown',
+                number_format($sale->total_amount, 2),
+                $sale->payment_type,
+                $sale->sale_date?->format('Y-m-d H:i'),
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        // Style headers
+        $headerStyle = $sheet->getStyle('A1:F1');
+        $headerStyle->getFont()->setBold(true);
+        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // Auto widen columns
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'sales_export_' . now()->format('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename);
     }
 
 }

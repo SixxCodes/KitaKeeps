@@ -50,19 +50,28 @@
         </div>
 
         <!-- Business Intelligence Section -->
-        @if($role === 'Owner' || $role === 'Admin')
+        
         <div>
             <p class="mb-2 text-xs font-semibold text-blue-300 uppercase select-none">
                 Business Intelligence
             </p>
-            <a href="#" @click.prevent="changePage('Reports &amp; Analytics')" 
+
+            <a href="#" @click.prevent="changePage('Reports')" 
+                :class="{'font-bold bg-blue-800': currentPage === 'Reports'}" class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
+                <i class="mr-1 fa-solid fa-robot"></i>
+                Reports
+            </a>
+
+            @if($role === 'Owner' || $role === 'Admin')
+            <a href="#" @click.prevent="changePage('Analytics &amp; Forecasting')" 
                 :class="{'font-bold bg-blue-800': currentPage === 'Reports &amp; Analytics'}" class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
                 <i class="mr-1 fa-solid fa-robot"></i>
-                Reports &amp; Analytics
+                Analytics &amp; Forecasting
             </a>
-        </div>
-        @endif
+            @endif
 
+        </div>
+        
         <!-- Management Section -->
         <div>
             <p class="block mb-2 text-xs font-semibold text-blue-300 uppercase select-none">

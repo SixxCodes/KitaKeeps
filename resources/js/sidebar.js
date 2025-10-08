@@ -13,7 +13,8 @@ export default function initSidebar() {
                     POS: `<i class="mr-1 fa-solid fa-computer"></i>`,
 
                     // BUSINESS INTELLIGENCE Section
-                    "Reports & Analytics": `<i class="mr-1 fa-solid fa-robot"></i>`,
+                    "Reports": `<i class="mr-1 fa-solid fa-robot"></i>`,
+                    "Analytics & Forecasting": `<i class="mr-1 fa-solid fa-robot"></i>`,
 
                     // MANAGEMENT Section
                     "My Hardware": `<i class="mr-1 fa-solid fa-warehouse"></i>`,

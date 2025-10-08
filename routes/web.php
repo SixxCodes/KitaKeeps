@@ -68,6 +68,7 @@ Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->
 // Attendance
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
 Route::post('/attendance/mark', [AttendanceController::class, 'mark'])->name('attendance.mark');
+Route::get('/attendance/export', [\App\Http\Controllers\AttendanceController::class, 'exportAttendance'])->name('attendance.export');
 
 // Salary
 Route::post('/pay-salary/{employee}', [PayrollController::class, 'paySalary'])->name('pay-salary');
@@ -96,6 +97,7 @@ Route::post('/sales/{sale}/pay', [SalesController::class, 'pay'])->name('sales.p
 Route::delete('/sales/{sale}', [SalesController::class, 'destroy'])->name('sales.destroy');
 Route::post('/customers/{customer}/credits/pay-all', [SalesController::class, 'payAll'])->name('sales.payAll');
 Route::delete('/customers/{customer}/credits/delete-all', [SalesController::class, 'destroyAll'])->name('sales.destroyAll');
+Route::get('/sales/export', [SalesController::class, 'exportSales'])->name('sales.export');
 
 Route::get('/employees/export', [AttendanceEmployeeExportController::class, 'export'])
     ->name('employees.export')

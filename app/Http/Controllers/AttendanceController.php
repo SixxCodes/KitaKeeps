@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\Employee;
 use Carbon\Carbon;
+use App\Models\UserBranch;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AttendanceController extends Controller
 {
@@ -71,4 +75,112 @@ class AttendanceController extends Controller
 
         return view('attendance.index', compact('employees'));
     }
+
+    public function exportAttendance()
+    {   
+        $user = auth()->user();
+        $search = request('att_search');
+        $sortBy = request('att_sort_by', 'att_date');
+        $direction = request('direction', 'desc');
+
+        $userBranches = $user->branches ?? collect();
+        $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
+                            ?? $userBranches->sortBy('branch_id')->first();
+        $currentBranchId = $currentBranch?->branch_id;
+
+        $query = Attendance::with(['attendancebelongsToemployee.person', 'attendancebelongsToemployee.branch']);
+
+        // Role-based visibility
+        switch (strtolower($user->role)) {
+            case 'owner':
+                $branchIds = $userBranches->pluck('branch_id')->toArray();
+                $query->whereHas('attendancebelongsToemployee', fn($q) => $q->whereIn('branch_id', $branchIds));
+                break;
+            case 'admin':
+                $query->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+                break;
+            case 'cashier':
+                $personId = $user->person_id;
+                $query->whereHas('attendancebelongsToemployee', fn($q) => $q->where('person_id', $personId));
+                break;
+            default:
+                $query->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+                break;
+        }
+
+        // Search filter
+        if ($search) {
+            $query->whereHas('attendancebelongsToemployee.person', fn($q) =>
+                $q->where('firstname', 'like', "%{$search}%")
+                ->orWhere('lastname', 'like', "%{$search}%")
+            );
+        }
+
+        // Sorting
+        switch ($sortBy) {
+            case 'employee_name':
+                $query->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+                    ->join('person', 'employee.person_id', '=', 'person.person_id')
+                    ->orderBy('person.firstname', $direction)
+                    ->select('attendance.*');
+                break;
+            case 'branch_name':
+                $query->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+                    ->join('branch', 'employee.branch_id', '=', 'branch.branch_id')
+                    ->orderBy('branch.branch_name', $direction)
+                    ->select('attendance.*');
+                break;
+            default:
+                $query->orderBy($sortBy, $direction);
+                break;
+        }
+
+        $attendances = $query->get();
+
+        // Generate Excel
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Headers
+        $headers = ['Attendance ID', 'Employee Name', 'Branch', 'Date', 'Status'];
+        $sheet->fromArray([$headers], NULL, 'A1');
+
+        // Rows
+        $row = 2;
+        foreach ($attendances as $att) {
+            $employeeName = ($att->attendancebelongsToemployee?->person?->firstname ?? '') . ' ' .
+                            ($att->attendancebelongsToemployee?->person?->lastname ?? '');
+            $branchName = $att->attendancebelongsToemployee?->branch?->branch_name ?? 'N/A';
+
+            $sheet->fromArray([
+                $att->attendance_id,
+                $employeeName,
+                $branchName,
+                $att->att_date?->format('Y-m-d'),
+                $att->status,
+            ], NULL, "A{$row}");
+            $row++;
+        }
+
+        // Style headers
+        $headerStyle = $sheet->getStyle('A1:E1');
+        $headerStyle->getFont()->setBold(true);
+        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // Auto width
+        foreach (range('A', 'E') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'attendance.xlsx';
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $filename);
+    }
+
 }

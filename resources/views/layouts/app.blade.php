@@ -182,7 +182,10 @@
                 </div>
 
                 <!-- BUSINESS INTELLIGENCE Section -->
-                <div v-else-if="currentPage === 'Reports &amp; Analytics'">
+                 <div v-else-if="currentPage === 'Reports'">
+                    @include('modules.reports') 
+                </div>
+                <div v-else-if="currentPage === 'Analytics &amp; Forecasting'">
                     @include('modules.reportsAndAnalytics') 
                 </div>
 
