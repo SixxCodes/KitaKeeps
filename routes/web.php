@@ -89,6 +89,8 @@ Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->
 Route::get('/customers/{customer}/credits', [CustomerController::class, 'credits']);
 Route::get('/customers/export', [CustomerController::class, 'exportCustomers'])
     ->name('customers.export');
+Route::get('/credits/export', [CustomerController::class, 'exportCredits'])
+    ->name('credits.export');
 
 // Sales
 Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');

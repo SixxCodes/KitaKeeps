@@ -1,6 +1,7 @@
 @php
 use App\Models\Sale;
 use App\Models\Attendance;
+use App\Models\Customer;
 use Illuminate\Support\Facades\Auth;
 
 $user = Auth::user();
@@ -9,18 +10,15 @@ $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))
                 ?? $userBranches->sortBy('branch_id')->first();
 $currentBranchId = $currentBranch?->branch_id;
 $currentBranchName = $currentBranch?->branch_name ?? 'N/A';
+$direction = request('direction', 'desc');
 
 /* ------------------ SALES ------------------ */
 $saleSearch = request('sale_search');
 $saleSortBy = request('sale_sort_by', 'sale_date');
-$direction = request('direction', 'desc'); // same for both
-
 $allowedSaleSorts = ['sale_id', 'total_amount', 'payment_type', 'sale_date', 'customer_name', 'cashier'];
 if (!in_array($saleSortBy, $allowedSaleSorts)) $saleSortBy = 'sale_date';
 
 $salesQuery = Sale::with(['salebelongsTocustomer', 'salebelongsToUser', 'salebelongsTobranch']);
-
-// Role-based visibility
 switch (strtolower($user->role)) {
     case 'owner':
         $branchIds = $userBranches->pluck('branch_id')->toArray();
@@ -37,8 +35,6 @@ switch (strtolower($user->role)) {
         $salesQuery->where('branch_id', $currentBranchId);
         break;
 }
-
-// Search filter
 if ($saleSearch) {
     $salesQuery->where(function($q) use ($saleSearch) {
         $q->where('sale_id', 'like', "%{$saleSearch}%")
@@ -46,8 +42,6 @@ if ($saleSearch) {
           ->orWhereHas('salebelongsToUser', fn($u) => $u->where('username', 'like', "%{$saleSearch}%"));
     });
 }
-
-// Sorting
 switch ($saleSortBy) {
     case 'customer_name':
         $salesQuery->join('customer', 'sale.customer_id', '=', 'customer.customer_id')
@@ -63,16 +57,13 @@ switch ($saleSortBy) {
         $salesQuery->orderBy($saleSortBy, $direction);
         break;
 }
-
 $sales = $salesQuery->get();
 
 /* ------------------ ATTENDANCE ------------------ */
 $attSearch = request('att_search');
 $attSortBy = request('att_sort_by', 'att_date');
 
-$attendanceQuery = Attendance::with(['attendancebelongsToemployee.person', 'attendancebelongsToemployee.branch']);
-
-// Role-based visibility
+$attendanceQuery = \App\Models\Attendance::with(['attendancebelongsToemployee.person', 'attendancebelongsToemployee.branch']);
 switch (strtolower($user->role)) {
     case 'owner':
         $branchIds = $userBranches->pluck('branch_id')->toArray();
@@ -89,16 +80,12 @@ switch (strtolower($user->role)) {
         $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
         break;
 }
-
-// Search filter
 if ($attSearch) {
     $attendanceQuery->whereHas('attendancebelongsToemployee.person', fn($q) =>
         $q->where('firstname', 'like', "%{$attSearch}%")
           ->orWhere('lastname', 'like', "%{$attSearch}%")
     );
 }
-
-// Sorting
 switch ($attSortBy) {
     case 'employee_name':
         $attendanceQuery->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
@@ -116,8 +103,55 @@ switch ($attSortBy) {
         $attendanceQuery->orderBy($attSortBy, $direction);
         break;
 }
-
 $attendances = $attendanceQuery->get();
+
+/* ------------------ CREDITS ------------------ */
+$user = auth()->user();
+$search = request('search'); // from search input
+$sortBy = request('sort_by', 'cust_name'); // default sort
+$direction = request('direction', 'asc'); // default direction
+
+// Only include customers with at least 1 PAID credit (payment_type = 'Cash')
+$creditsQuery = Customer::whereHas('sales', fn($q) => $q->where('payment_type', 'Cash'));
+
+// Role-based filtering
+switch (strtolower($user->role)) {
+    case 'owner':
+        $creditsQuery->whereIn('branch_id', $userBranches->pluck('branch_id'));
+        break;
+    case 'admin':
+        $creditsQuery->where('branch_id', $currentBranchId);
+        break;
+    case 'cashier':
+        $creditsQuery->whereHas('sales', fn($q) => $q->where('created_by', $user->user_id));
+        break;
+    default:
+        $creditsQuery->where('branch_id', $currentBranchId);
+        break;
+}
+
+// Apply search on customer name
+if ($search) {
+    $creditsQuery->where('cust_name', 'like', "%{$search}%");
+}
+
+// Eager load only PAID sales and related products
+$creditsQuery->with([
+    'sales' => fn($q) => $q->where('payment_type', 'Cash')
+                             ->with('sale_items.sale_itembelongsTobranch_product.product')
+]);
+
+// Apply sort (by customer column or aggregate sales column)
+if (in_array($sortBy, ['cust_name', 'customer_id'])) {
+    $creditsQuery->orderBy($sortBy, $direction);
+} elseif ($sortBy === 'total_paid') {
+    // Sort by total paid credits (sum of sales.total_amount)
+    $creditsQuery->withSum('sales as total_paid', 'total_amount')
+                 ->orderBy('total_paid', $direction);
+}
+
+$credits = $creditsQuery->get();
+
 @endphp
 
 
@@ -558,6 +592,8 @@ $attendances = $attendanceQuery->get();
             </button>
         </div>
         
+        
+        <!-- Controls: Export + Search -->
         <div class="flex items-center justify-between mb-1">
             <!-- Export -->
             <div class="flex items-center mb-5 space-x-4">
@@ -681,8 +717,211 @@ $attendances = $attendanceQuery->get();
 
 
 
-<!-- Credits -->
+<!-- ======================== CREDITS LOG MODAL ======================== -->
+<x-modal name="credits-log-modal" :show="false" maxWidth="2xl">
+    <div class="p-6 overflow-y-auto max-h-[80vh]">
 
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold text-blue-900 dark:text-gray-100">
+                Credits Log — {{ $currentBranchName }}
+            </h2>
+            <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                x-on:click="$dispatch('close-modal', 'credits-log-modal')">
+                <i class="text-lg fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Controls: Export + Search -->
+        <div class="flex items-center justify-between mb-1">
+            <!-- Export -->
+            <div class="flex items-center mb-5 space-x-4">
+                <button 
+                    x-on:click="$dispatch('open-modal', 'export-credits')" 
+                    class="flex items-center px-5 py-2 text-xs text-black transition-colors bg-white rounded-md shadow hover:bg-purple-300 sm:text-xs md:text-xs lg:text-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden ml-2 lg:inline">Export</span>
+                </button>
+            </div>
+
+            <!-- Search Bar --> 
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center px-2 py-1 border rounded w-25 sm:px-5 sm:py-1 md:px-3 md:py-2 sm:w-50 md:w-52">
+                        <i class="mr-2 text-purple-400 fa-solid fa-magnifying-glass"></i>
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search..."
+                            onkeydown="if(event.key==='Enter'){ 
+                                const params = new URLSearchParams(window.location.search); 
+                                params.set('search', this.value); 
+                                window.location.href = window.location.pathname + '?' + params.toString(); 
+                            }"
+                            class="w-full py-0 text-sm bg-transparent border-none outline-none sm:py-0 md:py-1"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm border-collapse table-auto">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+
+                        <!-- Customer Name -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'sort_by' => 'cust_name',
+                                'direction' => request('sort_by') === 'cust_name' && request('direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Customer</span>
+                                <i class="fa-solid 
+                                    @if(request('sort_by') === 'cust_name')
+                                        {{ request('direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+
+                        <!-- Total Paid Credits -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'sort_by' => 'total_credit',
+                                'direction' => request('sort_by') === 'total_credit' && request('direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Total Paid Credits</span>
+                                <i class="fa-solid 
+                                    @if(request('sort_by') === 'total_credit')
+                                        {{ request('direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                    @forelse ($credits as $customer)
+                        @php
+                            $totalPaid = $customer->sales->sum('total_amount');
+                            $nextDue = $customer->sales->sortBy('due_date')->first()?->due_date;
+                        @endphp
+                        <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">{{ $customer->cust_name }}</td>
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">₱{{ number_format($totalPaid, 2) }}</td>
+                            <td class="px-4 py-2">
+                                <button x-data 
+                                        x-on:click="$dispatch('open-modal', 'view-credit-{{ $customer->customer_id }}')"
+                                        class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                No paid credits found.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button type="button" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                x-on:click="$dispatch('close-modal', 'credits-log-modal')">
+                Close
+            </button>
+        </div>
+    </div>
+</x-modal>
+
+<!-- Export Credits Modal -->
+<x-modal name="export-credits" :show="false" maxWidth="sm">
+    <div class="p-6 space-y-4">
+
+        <h2 class="text-lg font-semibold text-center text-gray-800">Export Credits As</h2>
+
+        <div class="flex justify-center mt-4 space-x-4">
+
+            <!-- Excel -->
+            <a href="{{ route('credits.export', [
+                        'search' => request('search'),
+                        'sort_by' => request('sort_by', 'sale_date'),
+                        'direction' => request('direction', 'desc')
+                    ]) }}"
+               class="flex flex-col items-center w-24 px-4 py-3 transition bg-green-100 rounded-lg hover:bg-green-200">
+                <i class="mb-1 text-2xl text-green-600 fa-solid fa-file-excel"></i>
+                <span class="text-sm text-gray-700">Excel</span>
+            </a>
+
+        </div>
+
+        <!-- Cancel -->
+        <div class="flex justify-center mt-6">
+            <button 
+                x-on:click="$dispatch('close-modal', 'export-credits')"
+                class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+            >Cancel</button>
+        </div>
+    </div>
+</x-modal>
+
+<!-- ======================== INDIVIDUAL CREDIT VIEW MODALS ======================== -->
+@foreach ($credits as $customer)
+    <x-modal name="view-credit-{{ $customer->customer_id }}" :show="false" maxWidth="2xl">
+        <div class="p-6 overflow-y-auto max-h-[80vh]">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-blue-800 dark:text-gray-100">
+                    {{ $customer->cust_name }} — Paid Credits
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    x-on:click="$dispatch('close-modal', 'view-credit-{{ $customer->customer_id }}')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            @foreach ($customer->sales as $sale)
+                <h4 class="mt-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    Sale #{{ $sale->sale_id }} — ₱{{ number_format($sale->total_amount,2) }} | Date: {{ $sale->sale_date?->format('Y-m-d') }}
+                </h4>
+                <table class="w-full mb-4 text-sm border-collapse table-auto">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Product</th>
+                            <th class="px-3 py-2 text-left">Quantity</th>
+                            <th class="px-3 py-2 text-left">Unit Price</th>
+                            <th class="px-3 py-2 text-left">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                        @foreach ($sale->sale_items as $item)
+                            <tr class="bg-white dark:bg-gray-800">
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">{{ $item->sale_itembelongsTobranch_product?->product?->prod_name ?? 'N/A' }}</td>
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">{{ $item->quantity }}</td>
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">₱{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">₱{{ number_format($item->subtotal, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endforeach
+
+            <div class="flex justify-end mt-4">
+                <button type="button" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                    x-on:click="$dispatch('close-modal', 'view-credit-{{ $customer->customer_id }}')">
+                    Close
+                </button>
+            </div>
+        </div>
+    </x-modal>
+@endforeach
 
 
 

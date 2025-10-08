@@ -188,4 +188,93 @@ class CustomerController extends Controller
         }, $filename);
     }
 
+    public function exportCredits(Request $request)
+    {
+        $user = auth()->user();
+        $search = $request->query('search');
+        $sortBy = $request->query('sort_by', 'sale_date'); // default sort
+        $direction = $request->query('direction', 'desc');
+        
+        $userBranches = $user->branches ?? collect();
+        $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
+                        ?? $userBranches->sortBy('branch_id')->first();
+        $currentBranchId = $currentBranch?->branch_id;
+
+        // Fetch all customers with **PAID credits** (i.e., payment_type = 'Cash')
+        $customers = Customer::whereHas('sales', function ($q) use ($currentBranchId, $user, $userBranches) {
+            // Role-based visibility
+            switch (strtolower($user->role)) {
+                case 'owner':
+                    $q->whereIn('branch_id', $userBranches->pluck('branch_id'));
+                    break;
+                case 'admin':
+                    $q->where('branch_id', $currentBranchId);
+                    break;
+                case 'cashier':
+                    $q->where('created_by', $user->user_id)
+                    ->where('branch_id', $currentBranchId);
+                    break;
+                default:
+                    $q->where('branch_id', $currentBranchId);
+                    break;
+            }
+            // Only include paid credits
+            $q->where('payment_type', 'Cash');
+        });
+
+        // Apply search
+        if ($search) {
+            $customers->where('cust_name', 'like', "%{$search}%");
+        }
+
+        $customers = $customers->get();
+
+        // Create Spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Paid Credits');
+
+        // Headers
+        $headers = ['Customer ID', 'Customer Name', 'Total Paid Credits', 'Last Paid Date'];
+        $sheet->fromArray([$headers], null, 'A1');
+
+        $row = 2;
+        foreach ($customers as $customer) {
+            $paidSales = $customer->sales()
+                ->where('payment_type', 'Cash')
+                ->orderBy($sortBy, $direction)
+                ->get();
+
+            $totalPaid = $paidSales->sum('total_amount');
+            $lastPaidDate = $paidSales->sortByDesc('sale_date')->first()?->sale_date?->format('Y-m-d');
+
+            $sheet->fromArray([
+                $customer->customer_id,
+                $customer->cust_name,
+                number_format($totalPaid, 2),
+                $lastPaidDate ?? '-'
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        // Style headers
+        $headerStyle = $sheet->getStyle('A1:D1');
+        $headerStyle->getFont()->setBold(true);
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        foreach (range('A', 'D') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'paid_credits_' . now()->format('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename);
+    }
+
 }
