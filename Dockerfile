@@ -19,7 +19,7 @@ RUN npm run build
 # =========================
 # Stage 2 - Backend (Laravel + PHP + Composer)
 # =========================
-FROM php:8.2-fpm
+FROM php:8.2-apache
 
 # Install system dependencies including libcurl dev headers
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,8 +39,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
 # Install Composer globally
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www
+# Set working directory (Apache default document root)
+WORKDIR /var/www/html
 
 # Copy Laravel app files
 COPY . .
@@ -66,8 +66,11 @@ RUN if [ -f .env.example ]; then cp .env.example .env; fi \
     && php artisan route:cache \
     && php artisan view:cache
 
-# Expose PHP-FPM port
-EXPOSE 9000
+# Expose HTTP port for Render to detect
+EXPOSE 80
 
-# Start PHP-FPM
-CMD ["php-fpm"]
+# Enable Apache rewrite module (needed by Laravel)
+RUN a2enmod rewrite headers expires deflate
+
+# Start Apache in foreground (image default entrypoint uses apache2-foreground)
+CMD ["apache2-foreground"]
