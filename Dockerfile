@@ -45,6 +45,10 @@ WORKDIR /var/www/html
 # Copy Laravel app files
 COPY . .
 
+# Copy entrypoint script and make executable
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Copy built frontend assets from Stage 1
 COPY --from=frontend /app/public/build ./public/build
 
@@ -78,4 +82,5 @@ RUN sed -i 's#/var/www/html#/var/www/html/public#g' /etc/apache2/sites-available
     && sed -i "s/DirectoryIndex .*/DirectoryIndex index.php index.html/g" /etc/apache2/mods-enabled/dir.conf
 
 # Start Apache in foreground (image default entrypoint uses apache2-foreground)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
