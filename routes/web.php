@@ -72,6 +72,7 @@ Route::get('/attendance/export', [\App\Http\Controllers\AttendanceController::cl
 
 // Salary
 Route::post('/pay-salary/{employee}', [PayrollController::class, 'paySalary'])->name('pay-salary');
+Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
 
 // Products
 Route::post('/products', [ProductController::class, 'store'])->name('products.store');

@@ -1,156 +1,201 @@
 @php
-use App\Models\Sale;
-use App\Models\Attendance;
-use App\Models\Customer;
-use Illuminate\Support\Facades\Auth;
 
-$user = Auth::user();
-$userBranches = $user->branches ?? collect();
-$currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
-                ?? $userBranches->sortBy('branch_id')->first();
-$currentBranchId = $currentBranch?->branch_id;
-$currentBranchName = $currentBranch?->branch_name ?? 'N/A';
-$direction = request('direction', 'desc');
+    use App\Models\Sale;
+    use App\Models\Attendance;
+    use App\Models\Customer;
+    use App\Models\Payroll;
+    use Illuminate\Support\Facades\Auth;
 
-/* ------------------ SALES ------------------ */
-$saleSearch = request('sale_search');
-$saleSortBy = request('sale_sort_by', 'sale_date');
-$allowedSaleSorts = ['sale_id', 'total_amount', 'payment_type', 'sale_date', 'customer_name', 'cashier'];
-if (!in_array($saleSortBy, $allowedSaleSorts)) $saleSortBy = 'sale_date';
+    $user = Auth::user();
+    $userBranches = $user->branches ?? collect();
+    $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
+                    ?? $userBranches->sortBy('branch_id')->first();
+    $currentBranchId = $currentBranch?->branch_id;
+    $currentBranchName = $currentBranch?->branch_name ?? 'N/A';
+    $direction = request('direction', 'desc');
 
-$salesQuery = Sale::with(['salebelongsTocustomer', 'salebelongsToUser', 'salebelongsTobranch']);
-switch (strtolower($user->role)) {
-    case 'owner':
-        $branchIds = $userBranches->pluck('branch_id')->toArray();
-        $salesQuery->whereIn('branch_id', $branchIds);
-        break;
-    case 'admin':
-        $salesQuery->where('branch_id', $currentBranchId);
-        break;
-    case 'cashier':
-        $salesQuery->where('created_by', $user->user_id)
-                   ->where('branch_id', $currentBranchId);
-        break;
-    default:
-        $salesQuery->where('branch_id', $currentBranchId);
-        break;
-}
-if ($saleSearch) {
-    $salesQuery->where(function($q) use ($saleSearch) {
-        $q->where('sale_id', 'like', "%{$saleSearch}%")
-          ->orWhereHas('salebelongsTocustomer', fn($c) => $c->where('cust_name', 'like', "%{$saleSearch}%"))
-          ->orWhereHas('salebelongsToUser', fn($u) => $u->where('username', 'like', "%{$saleSearch}%"));
-    });
-}
-switch ($saleSortBy) {
-    case 'customer_name':
-        $salesQuery->join('customer', 'sale.customer_id', '=', 'customer.customer_id')
-                   ->orderBy('customer.cust_name', $direction)
-                   ->select('sale.*');
-        break;
-    case 'cashier':
-        $salesQuery->join('user', 'sale.created_by', '=', 'user.user_id')
-                   ->orderBy('user.username', $direction)
-                   ->select('sale.*');
-        break;
-    default:
-        $salesQuery->orderBy($saleSortBy, $direction);
-        break;
-}
-$sales = $salesQuery->get();
+    /* ------------------ SALES ------------------ */
+    $saleSearch = request('sale_search');
+    $saleSortBy = request('sale_sort_by', 'sale_date');
+    $allowedSaleSorts = ['sale_id', 'total_amount', 'payment_type', 'sale_date', 'customer_name', 'cashier'];
+    if (!in_array($saleSortBy, $allowedSaleSorts)) $saleSortBy = 'sale_date';
 
-/* ------------------ ATTENDANCE ------------------ */
-$attSearch = request('att_search');
-$attSortBy = request('att_sort_by', 'att_date');
+    $salesQuery = Sale::with(['salebelongsTocustomer', 'salebelongsToUser', 'salebelongsTobranch']);
+    switch (strtolower($user->role)) {
+        case 'owner':
+            $branchIds = $userBranches->pluck('branch_id')->toArray();
+            $salesQuery->whereIn('branch_id', $branchIds);
+            break;
+        case 'admin':
+            $salesQuery->where('branch_id', $currentBranchId);
+            break;
+        case 'cashier':
+            $salesQuery->where('created_by', $user->user_id)
+                    ->where('branch_id', $currentBranchId);
+            break;
+        default:
+            $salesQuery->where('branch_id', $currentBranchId);
+            break;
+    }
+    if ($saleSearch) {
+        $salesQuery->where(function($q) use ($saleSearch) {
+            $q->where('sale_id', 'like', "%{$saleSearch}%")
+            ->orWhereHas('salebelongsTocustomer', fn($c) => $c->where('cust_name', 'like', "%{$saleSearch}%"))
+            ->orWhereHas('salebelongsToUser', fn($u) => $u->where('username', 'like', "%{$saleSearch}%"));
+        });
+    }
+    switch ($saleSortBy) {
+        case 'customer_name':
+            $salesQuery->join('customer', 'sale.customer_id', '=', 'customer.customer_id')
+                    ->orderBy('customer.cust_name', $direction)
+                    ->select('sale.*');
+            break;
+        case 'cashier':
+            $salesQuery->join('user', 'sale.created_by', '=', 'user.user_id')
+                    ->orderBy('user.username', $direction)
+                    ->select('sale.*');
+            break;
+        default:
+            $salesQuery->orderBy($saleSortBy, $direction);
+            break;
+    }
+    $sales = $salesQuery->get();
 
-$attendanceQuery = \App\Models\Attendance::with(['attendancebelongsToemployee.person', 'attendancebelongsToemployee.branch']);
-switch (strtolower($user->role)) {
-    case 'owner':
-        $branchIds = $userBranches->pluck('branch_id')->toArray();
-        $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->whereIn('branch_id', $branchIds));
-        break;
-    case 'admin':
-        $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
-        break;
-    case 'cashier':
-        $personId = $user->person_id;
-        $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('person_id', $personId));
-        break;
-    default:
-        $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
-        break;
-}
-if ($attSearch) {
-    $attendanceQuery->whereHas('attendancebelongsToemployee.person', fn($q) =>
-        $q->where('firstname', 'like', "%{$attSearch}%")
-          ->orWhere('lastname', 'like', "%{$attSearch}%")
-    );
-}
-switch ($attSortBy) {
-    case 'employee_name':
-        $attendanceQuery->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+    /* ------------------ ATTENDANCE ------------------ */
+    $attSearch = request('att_search');
+    $attSortBy = request('att_sort_by', 'att_date');
+
+    $attendanceQuery = Attendance::with(['attendancebelongsToemployee.person', 'attendancebelongsToemployee.branch']);
+    switch (strtolower($user->role)) {
+        case 'owner':
+            $branchIds = $userBranches->pluck('branch_id')->toArray();
+            $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->whereIn('branch_id', $branchIds));
+            break;
+        case 'admin':
+            $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+            break;
+        case 'cashier':
+            $personId = $user->person_id;
+            $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('person_id', $personId));
+            break;
+        default:
+            $attendanceQuery->whereHas('attendancebelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+            break;
+    }
+    if ($attSearch) {
+        $attendanceQuery->whereHas('attendancebelongsToemployee.person', fn($q) =>
+            $q->where('firstname', 'like', "%{$attSearch}%")
+            ->orWhere('lastname', 'like', "%{$attSearch}%")
+        );
+    }
+    switch ($attSortBy) {
+        case 'employee_name':
+            $attendanceQuery->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+                            ->join('person', 'employee.person_id', '=', 'person.person_id')
+                            ->orderBy('person.firstname', $direction)
+                            ->select('attendance.*');
+            break;
+        case 'branch_name':
+            $attendanceQuery->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+                            ->join('branch', 'employee.branch_id', '=', 'branch.branch_id')
+                            ->orderBy('branch.branch_name', $direction)
+                            ->select('attendance.*');
+            break;
+        default:
+            $attendanceQuery->orderBy($attSortBy, $direction);
+            break;
+    }
+    $attendances = $attendanceQuery->get();
+
+    /* ------------------ CREDITS ------------------ */
+    $creditsSearch = request('search'); 
+    $creditsSortBy = request('sort_by', 'cust_name'); 
+    $creditsDirection = request('direction', 'asc'); 
+
+    $creditsQuery = Customer::whereHas('sales', fn($q) => $q->where('payment_type', 'Cash'));
+
+    switch (strtolower($user->role)) {
+        case 'owner':
+            $creditsQuery->whereIn('branch_id', $userBranches->pluck('branch_id'));
+            break;
+        case 'admin':
+            $creditsQuery->where('branch_id', $currentBranchId);
+            break;
+        case 'cashier':
+            $creditsQuery->whereHas('sales', fn($q) => $q->where('created_by', $user->user_id));
+            break;
+        default:
+            $creditsQuery->where('branch_id', $currentBranchId);
+            break;
+    }
+
+    if ($creditsSearch) {
+        $creditsQuery->where('cust_name', 'like', "%{$creditsSearch}%");
+    }
+
+    $creditsQuery->with([
+        'sales' => fn($q) => $q->where('payment_type', 'Cash')
+                                ->with('sale_items.sale_itembelongsTobranch_product.product')
+    ]);
+
+    if (in_array($creditsSortBy, ['cust_name', 'customer_id'])) {
+        $creditsQuery->orderBy($creditsSortBy, $creditsDirection);
+    } elseif ($creditsSortBy === 'total_paid') {
+        $creditsQuery->withSum('sales as total_paid', 'total_amount')
+                    ->orderBy('total_paid', $creditsDirection);
+    }
+
+    $credits = $creditsQuery->get();
+
+    /* ------------------ PAYROLL ------------------ */
+    $payrollSearch = request('payroll_search');
+    $payrollSortBy = request('payroll_sort_by', 'period_end');
+    $payrollDirection = request('payroll_direction', 'desc');
+
+    $payrollQuery = Payroll::with(['payrollbelongsToemployee.person', 'payrollbelongsToemployee.branch']);
+
+    switch (strtolower($user->role)) {
+        case 'owner':
+            $branchIds = $userBranches->pluck('branch_id')->toArray();
+            $payrollQuery->whereHas('payrollbelongsToemployee', fn($q) => $q->whereIn('branch_id', $branchIds));
+            break;
+        case 'admin':
+            $payrollQuery->whereHas('payrollbelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+            break;
+        case 'cashier':
+            $personId = $user->person_id;
+            $payrollQuery->whereHas('payrollbelongsToemployee', fn($q) => $q->where('person_id', $personId));
+            break;
+        default:
+            $payrollQuery->whereHas('payrollbelongsToemployee', fn($q) => $q->where('branch_id', $currentBranchId));
+            break;
+    }
+
+    if ($payrollSearch) {
+        $payrollQuery->whereHas('payrollbelongsToemployee.person', fn($q) =>
+            $q->where('firstname', 'like', "%{$payrollSearch}%")
+            ->orWhere('lastname', 'like', "%{$payrollSearch}%")
+        );
+    }
+
+    switch ($payrollSortBy) {
+        case 'employee_name':
+            $payrollQuery->join('employee', 'payroll.employee_id', '=', 'employee.employee_id')
                         ->join('person', 'employee.person_id', '=', 'person.person_id')
-                        ->orderBy('person.firstname', $direction)
-                        ->select('attendance.*');
-        break;
-    case 'branch_name':
-        $attendanceQuery->join('employee', 'attendance.employee_id', '=', 'employee.employee_id')
+                        ->orderBy('person.firstname', $payrollDirection)
+                        ->select('payroll.*');
+            break;
+        case 'branch_name':
+            $payrollQuery->join('employee', 'payroll.employee_id', '=', 'employee.employee_id')
                         ->join('branch', 'employee.branch_id', '=', 'branch.branch_id')
-                        ->orderBy('branch.branch_name', $direction)
-                        ->select('attendance.*');
-        break;
-    default:
-        $attendanceQuery->orderBy($attSortBy, $direction);
-        break;
-}
-$attendances = $attendanceQuery->get();
-
-/* ------------------ CREDITS ------------------ */
-$user = auth()->user();
-$search = request('search'); // from search input
-$sortBy = request('sort_by', 'cust_name'); // default sort
-$direction = request('direction', 'asc'); // default direction
-
-// Only include customers with at least 1 PAID credit (payment_type = 'Cash')
-$creditsQuery = Customer::whereHas('sales', fn($q) => $q->where('payment_type', 'Cash'));
-
-// Role-based filtering
-switch (strtolower($user->role)) {
-    case 'owner':
-        $creditsQuery->whereIn('branch_id', $userBranches->pluck('branch_id'));
-        break;
-    case 'admin':
-        $creditsQuery->where('branch_id', $currentBranchId);
-        break;
-    case 'cashier':
-        $creditsQuery->whereHas('sales', fn($q) => $q->where('created_by', $user->user_id));
-        break;
-    default:
-        $creditsQuery->where('branch_id', $currentBranchId);
-        break;
-}
-
-// Apply search on customer name
-if ($search) {
-    $creditsQuery->where('cust_name', 'like', "%{$search}%");
-}
-
-// Eager load only PAID sales and related products
-$creditsQuery->with([
-    'sales' => fn($q) => $q->where('payment_type', 'Cash')
-                             ->with('sale_items.sale_itembelongsTobranch_product.product')
-]);
-
-// Apply sort (by customer column or aggregate sales column)
-if (in_array($sortBy, ['cust_name', 'customer_id'])) {
-    $creditsQuery->orderBy($sortBy, $direction);
-} elseif ($sortBy === 'total_paid') {
-    // Sort by total paid credits (sum of sales.total_amount)
-    $creditsQuery->withSum('sales as total_paid', 'total_amount')
-                 ->orderBy('total_paid', $direction);
-}
-
-$credits = $creditsQuery->get();
+                        ->orderBy('branch.branch_name', $payrollDirection)
+                        ->select('payroll.*');
+            break;
+        default:
+            $payrollQuery->orderBy($payrollSortBy, $payrollDirection);
+            break;
+    }
+    $payrolls = $payrollQuery->get();
 
 @endphp
 
@@ -922,6 +967,165 @@ $credits = $creditsQuery->get();
         </div>
     </x-modal>
 @endforeach
+
+
+
+
+
+<!-- Payroll -->
+<!-- Export & Search: Payroll Log -->
+<x-modal name="payroll-log-modal" :show="false" maxWidth="2xl">
+    <div class="p-6 overflow-y-auto max-h-[80vh]">
+
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold text-blue-900 dark:text-gray-100">
+                Payroll Log — {{ $currentBranchName }}
+            </h2>
+            <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                x-on:click="$dispatch('close-modal', 'payroll-log-modal')">
+                <i class="text-lg fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Controls: Export + Search -->
+        <div class="flex items-center justify-between mb-1">
+            <!-- Export -->
+            <div class="flex items-center mb-5 space-x-4">
+                <button 
+                    x-on:click="$dispatch('open-modal', 'export-payroll')" 
+                    class="flex items-center px-5 py-2 text-xs text-black transition-colors bg-white rounded-md shadow hover:bg-blue-300 sm:text-xs md:text-xs lg:text-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden ml-2 lg:inline">Export</span>
+                </button>
+            </div>
+
+            <!-- Search Bar --> 
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center px-2 py-1 border rounded w-25 sm:px-5 sm:py-1 md:px-3 md:py-2 sm:w-50 md:w-52">
+                        <i class="mr-2 text-blue-400 fa-solid fa-magnifying-glass"></i>
+                        <input
+                            type="text"
+                            name="payroll_search"
+                            value="{{ request('payroll_search') }}"
+                            placeholder="Search..."
+                            onkeydown="if(event.key==='Enter'){ 
+                                const params = new URLSearchParams(window.location.search); 
+                                params.set('payroll_search', this.value); 
+                                window.location.href = window.location.pathname + '?' + params.toString(); 
+                            }"
+                            class="w-full py-0 text-sm bg-transparent border-none outline-none sm:py-0 md:py-1"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm border-collapse table-auto">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <!-- Employee Name -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'payroll_sort_by' => 'employee_name',
+                                'payroll_direction' => request('payroll_sort_by') === 'employee_name' && request('payroll_direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Employee</span>
+                                <i class="fa-solid 
+                                    @if(request('payroll_sort_by') === 'employee_name')
+                                        {{ request('payroll_direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+
+                        <!-- Branch -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'payroll_sort_by' => 'branch_name',
+                                'payroll_direction' => request('payroll_sort_by') === 'branch_name' && request('payroll_direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Branch</span>
+                                <i class="fa-solid 
+                                    @if(request('payroll_sort_by') === 'branch_name')
+                                        {{ request('payroll_direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+
+                        <!-- Period Start -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'payroll_sort_by' => 'period_start',
+                                'payroll_direction' => request('payroll_sort_by') === 'period_start' && request('payroll_direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Period Start</span>
+                                <i class="fa-solid 
+                                    @if(request('payroll_sort_by') === 'period_start')
+                                        {{ request('payroll_direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+
+                        <!-- Period End -->
+                        <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-200">
+                            <a href="{{ request()->fullUrlWithQuery([
+                                'payroll_sort_by' => 'period_end',
+                                'payroll_direction' => request('payroll_sort_by') === 'period_end' && request('payroll_direction') === 'asc' ? 'desc' : 'asc'
+                            ]) }}" class="flex items-center space-x-1">
+                                <span>Period End</span>
+                                <i class="fa-solid 
+                                    @if(request('payroll_sort_by') === 'period_end')
+                                        {{ request('payroll_direction') === 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}
+                                    @else
+                                        fa-sort
+                                    @endif"></i>
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                    @forelse ($payrolls as $payroll)
+                        <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">
+                                {{ $payroll->payrollbelongsToemployee?->person?->firstname ?? '' }}
+                                {{ $payroll->payrollbelongsToemployee?->person?->lastname ?? '' }}
+                            </td>
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">
+                                {{ $payroll->payrollbelongsToemployee?->branch?->branch_name ?? 'N/A' }}
+                            </td>
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">
+                                {{ $payroll->period_start?->format('Y-m-d') }}
+                            </td>
+                            <td class="px-4 py-2 text-gray-900 dark:text-gray-100">
+                                {{ $payroll->period_end?->format('Y-m-d') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                No payroll records found.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button type="button" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                x-on:click="$dispatch('close-modal', 'payroll-log-modal')">
+                Close
+            </button>
+        </div>
+    </div>
+</x-modal>
 
 
 
