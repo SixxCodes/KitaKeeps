@@ -462,7 +462,7 @@
                 @forelse($employees as $employee)
                 <tr class="hover:bg-gray-50">
                     <!-- Count -->
-                    <td class="px-3 py-2 border">{{ $loop->iteration }}</td>
+                    <td class="px-3 py-2 border bg-blue-50">{{ $loop->iteration }}</td>
 
                     <!-- ID -->
                     <td class="px-3 py-2 border">{{ $employee->employee_id }}</td>

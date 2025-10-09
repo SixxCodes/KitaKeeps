@@ -268,7 +268,7 @@
 
 
 <!-- Logs Grid -->
-<div class="grid grid-cols-1 gap-6 mt-20 sm:grid-cols-1 lg:grid-cols-2">
+<div class="grid grid-cols-1 gap-6 mt-20 mb-40 sm:grid-cols-1 lg:grid-cols-2">
 
     <!-- Sales Log -->
     <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">

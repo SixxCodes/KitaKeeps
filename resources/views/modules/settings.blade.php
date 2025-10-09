@@ -97,16 +97,26 @@
 
             <!-- Font Size -->
             <div x-data="{ fontSize: localStorage.getItem('fontSize') || 'medium' }"
-                x-init="$watch('fontSize', value => {
+                x-init="
+                    // Apply the saved font size immediately
                     document.documentElement.style.fontSize = {
                         small: '14px',
                         medium: '16px',
                         large: '18px'
-                    }[value];
-                    localStorage.setItem('fontSize', value);
-                })"
+                    }[fontSize];
+
+                    // Watch for changes and update both DOM + localStorage
+                    $watch('fontSize', value => {
+                        document.documentElement.style.fontSize = {
+                            small: '14px',
+                            medium: '16px',
+                            large: '18px'
+                        }[value];
+                        localStorage.setItem('fontSize', value);
+                    });
+                "
                 class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md"
-                >
+            >
                 <div class="flex items-center space-x-3">
                     <i class="text-xl text-green-600 fa-solid fa-text-height"></i>
                     <div>
@@ -379,7 +389,7 @@
 </x-modal>
 
 <!-- Help Modal -->
-<x-modal name="help-modal" :show="false" maxWidth="2xl">
+<x-modal name="help-modal" :show="false" maxWidth="sm">
     <div class="p-6 space-y-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
@@ -396,32 +406,18 @@
         <!-- Socials Grid -->
         <section>
             <h3 class="mb-3 text-lg font-semibold text-blue-800">Follow us on Socials</h3>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <!-- Instagram -->
-                <a href="https://instagram.com" target="_blank" 
-                   class="flex flex-col items-center p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
-                    <i class="text-4xl text-pink-500 fa-brands fa-instagram"></i>
-                    <span class="mt-2 font-medium text-gray-700">Instagram</span>
-                </a>
-
+            <div class="w-full">
                 <!-- Facebook -->
-                <a href="https://facebook.com" target="_blank" 
+                <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
                    class="flex flex-col items-center p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
                     <i class="text-4xl text-blue-600 fa-brands fa-facebook"></i>
                     <span class="mt-2 font-medium text-gray-700">Facebook</span>
-                </a>
-
-                <!-- TikTok Social Card -->
-                <a href="https://www.tiktok.com" target="_blank" 
-                class="flex flex-col items-center p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
-                    <i class="text-4xl text-black-500 fa-brands fa-tiktok"></i>
-                    <span class="mt-2 font-medium text-gray-700">TikTok</span>
                 </a>
             </div>
         </section>
 
         <!-- Contact Emails -->
-        <section>
+        <!-- <section>
             <h3 class="mb-3 text-lg font-semibold text-blue-800">Contact Us</h3>
             <div class="grid grid-cols-1 gap-2 text-gray-700 sm:grid-cols-2">
                 <a href="mailto:vienugay@gmail.com" class="underline hover:text-blue-600">vienugay@gmail.com</a>
@@ -431,7 +427,7 @@
                 <a href="mailto:mapuro@gmail.com" class="underline hover:text-blue-600">mapuro@gmail.com</a>
                 <a href="mailto:nabre2@gmail.com" class="underline hover:text-blue-600">nabre2@gmail.com</a>
             </div>
-        </section>
+        </section> -->
 
         <!-- Close Button -->
         <div class="flex justify-end mt-4">
