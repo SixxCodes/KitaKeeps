@@ -14,164 +14,166 @@
 
 @endphp
 
-<div class="p-6 space-y-6">
+<!-- Dark Mode -->
+<!-- <div x-data="{ dark: localStorage.getItem('dark') === 'true' }"
+    x-init="$watch('dark', value => {
+        document.documentElement.classList.toggle('dark', value);
+        localStorage.setItem('dark', value);
+    })"
+    >
+    <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+        <div class="flex items-center space-x-3">
+            <i class="text-xl text-blue-600 fa-solid fa-moon"></i>
+            <div>
+                <p class="font-medium text-gray-800 dark:text-gray-200">Dark Mode</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark theme.</p>
+            </div>
+        </div>
+
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" x-model="dark" class="sr-only peer">
+            <div class="h-6 bg-gray-200 rounded-full w-11 peer peer-checked:bg-blue-600"></div>
+            <div class="absolute w-5 h-5 bg-white rounded-full left-1 top-0.5 peer-checked:translate-x-full transition"></div>
+        </label>
+    </div>
+</div> -->
+
+<div class="p-6 space-y-8">
 
     <!-- Title -->
-    <div class="mb-4">
+    <!-- <div class="mb-4">
         <h2 class="text-2xl font-bold text-gray-800">Settings</h2>
         <p class="text-sm text-gray-500">Manage your preferences and system options below.</p>
-    </div>
+    </div> -->
 
-    <!-- Settings Grid -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- ================= Category 1: Cloud & Logs ================= -->
+    <div class="space-y-4">
+        <h2 class="text-2xl font-bold text-gray-800">Cloud & Activity</h2>
+        <p class="text-sm text-gray-500">View and manage your cloud files and system activity.</p>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 
-        <!-- Dark Mode -->
-        <!-- <div x-data="{ dark: localStorage.getItem('dark') === 'true' }"
-            x-init="$watch('dark', value => {
-                document.documentElement.classList.toggle('dark', value);
-                localStorage.setItem('dark', value);
-            })"
-            >
+            <!-- Your Files -->
             <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
                 <div class="flex items-center space-x-3">
-                    <i class="text-xl text-blue-600 fa-solid fa-moon"></i>
+                    <i class="text-xl text-indigo-600 fa-solid fa-cloud"></i>
                     <div>
-                        <p class="font-medium text-gray-800 dark:text-gray-200">Dark Mode</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark theme.</p>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Cloud Files</p>
+                        <p class="text-sm text-gray-500">View files you’ve stored in the cloud.</p>
+                    </div>
+                </div>
+                <button 
+                    x-data 
+                    x-on:click="$dispatch('open-modal', 'cloud-files-modal')" 
+                    class="px-3 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700">
+                    View
+                </button>
+            </div>
+
+            <!-- Audit Log -->
+            <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+                <div class="flex items-center space-x-3">
+                    <i class="text-xl text-red-600 fa-solid fa-clipboard-list"></i>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Audit Log</p>
+                        <p class="text-sm text-gray-500">View system activities and records.</p>
+                    </div>
+                </div>
+                <button 
+                    x-data 
+                    x-on:click="$dispatch('open-modal', 'audit-log')" 
+                    class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
+                    Open
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================= Category 2: Preferences & Help ================= -->
+    <div class="space-y-4">
+        <h2 class="text-2xl font-bold text-gray-800">Preferences & Support</h2>
+        <p class="text-sm text-gray-500">Adjust interface settings and get help or information.</p>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
+
+            <!-- Font Size -->
+            <div x-data="{ fontSize: localStorage.getItem('fontSize') || 'medium' }"
+                x-init="$watch('fontSize', value => {
+                    document.documentElement.style.fontSize = {
+                        small: '14px',
+                        medium: '16px',
+                        large: '18px'
+                    }[value];
+                    localStorage.setItem('fontSize', value);
+                })"
+                class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md"
+                >
+                <div class="flex items-center space-x-3">
+                    <i class="text-xl text-green-600 fa-solid fa-text-height"></i>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Font Size</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Adjust the interface text size.</p>
                     </div>
                 </div>
 
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" x-model="dark" class="sr-only peer">
-                    <div class="h-6 bg-gray-200 rounded-full w-11 peer peer-checked:bg-blue-600"></div>
-                    <div class="absolute w-5 h-5 bg-white rounded-full left-1 top-0.5 peer-checked:translate-x-full transition"></div>
-                </label>
+                <select x-model="fontSize" class="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-gray-200">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                </select>
             </div>
-        </div> -->
 
-        <!-- Font Size -->
-        <div x-data="{ fontSize: localStorage.getItem('fontSize') || 'medium' }"
-            x-init="$watch('fontSize', value => {
-                document.documentElement.style.fontSize = {
-                    small: '14px',
-                    medium: '16px',
-                    large: '18px'
-                }[value];
-                localStorage.setItem('fontSize', value);
-            })"
-            class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md"
-            >
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-green-600 fa-solid fa-text-height"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Font Size</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Adjust the interface text size.</p>
+            <!-- Check for Updates -->
+            <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+                <div class="flex items-center space-x-3">
+                    <i class="text-xl text-yellow-600 fa-solid fa-rotate"></i>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Check for Updates</p>
+                        <p class="text-sm text-gray-500">Ensure you’re running the latest version.</p>
+                    </div>
                 </div>
+                <button class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700" x-on:click="$dispatch('open-modal', 'update-modal');">
+                    Check
+                </button>
             </div>
 
-            <select x-model="fontSize" class="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:text-gray-200">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-            </select>
+            <!-- Terms & Services -->
+            <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+                <div class="flex items-center space-x-3">
+                    <i class="text-xl text-purple-600 fa-solid fa-file-contract"></i>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Terms & Services</p>
+                        <p class="text-sm text-gray-500">Read our terms and conditions.</p>
+                    </div>
+                </div>
+                <button 
+                    x-data 
+                    x-on:click="$dispatch('open-modal', 'terms-and-services-modal')" 
+                    class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
+                    View
+                </button>
+            </div>
+
+            <!-- Help -->
+            <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+                <div class="flex items-center space-x-3">
+                    <i class="text-xl text-indigo-600 fa-solid fa-circle-question"></i>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">Help</p>
+                        <p class="text-sm text-gray-500">Get assistance or support.</p>
+                    </div>
+                </div>
+                <button 
+                    x-data 
+                    x-on:click="$dispatch('open-modal', 'help-modal')" 
+                    class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
+                    Open
+                </button>
+            </div>
+
         </div>
-
-        <!-- Check for Updates -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-yellow-600 fa-solid fa-rotate"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Check for Updates</p>
-                    <p class="text-sm text-gray-500">Ensure you’re running the latest version.</p>
-                </div>
-            </div>
-            <button class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700" x-on:click="$dispatch('open-modal', 'update-modal');">
-                Check
-            </button>
-        </div>
-
-        <!-- Read Terms and Services -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-purple-600 fa-solid fa-file-contract"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Terms & Services</p>
-                    <p class="text-sm text-gray-500">Read our terms and conditions.</p>
-                </div>
-            </div>
-            <button 
-                x-data 
-                x-on:click="$dispatch('open-modal', 'terms-and-services-modal')" 
-                class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
-                View
-            </button>
-        </div>
-
-        <!-- Audit Log -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-red-600 fa-solid fa-clipboard-list"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Audit Log</p>
-                    <p class="text-sm text-gray-500">View system activities and records.</p>
-                </div>
-            </div>
-            <button 
-                x-data 
-                x-on:click="$dispatch('open-modal', 'audit-log')" 
-                class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
-                Open
-            </button>
-        </div>
-
-        <!-- Help -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-indigo-600 fa-solid fa-circle-question"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Help</p>
-                    <p class="text-sm text-gray-500">Get assistance or support.</p>
-                </div>
-            </div>
-            <button 
-                x-data 
-                x-on:click="$dispatch('open-modal', 'help-modal')" 
-                class="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
-                Open
-            </button>
-        </div>
-
-        <!-- Sync to Cloud -->
-        <!-- <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow hover:shadow-md sm:col-span-2 lg:col-span-3">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-blue-600 fa-solid fa-cloud-arrow-up"></i> 
-                <div>
-                    <h2 class="font-semibold text-gray-800">Sync to Cloud</h2>
-                    <p class="text-sm text-gray-500">Backup your data and access it anywhere.</p>
-                </div>
-            </div>
-            <button class="px-3 py-1 text-sm text-white bg-purple-600 rounded hover:bg-purple-700 ellipses whitespace-nowrap">
-                Sync Now
-            </button>
-        </div> -->
-
-        <!-- Your Files Card -->
-        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
-            <div class="flex items-center space-x-3">
-                <i class="text-xl text-indigo-600 fa-solid fa-cloud"></i>
-                <div>
-                    <p class="font-medium text-gray-800 dark:text-gray-200">Your Files</p>
-                    <p class="text-sm text-gray-500">View files you’ve stored in the cloud.</p>
-                </div>
-            </div>
-            <button 
-                x-data 
-                x-on:click="$dispatch('open-modal', 'cloud-files-modal')" 
-                class="px-3 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700">
-                View
-            </button>
-        </div>
+    </div>
 </div>
+
 
 <!-- Footer Branding -->
 <footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
@@ -448,7 +450,17 @@
 <x-modal name="cloud-files-modal" :show="false" maxWidth="2xl">
     <div class="p-6 max-h-[80vh] overflow-y-auto">
 
-        <h2 class="text-lg font-semibold text-center text-gray-800">Your Cloud Files</h2>
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold text-blue-900 dark:text-gray-100">Cloud Files</h2>
+            <button 
+                type="button" 
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                x-on:click="$dispatch('close-modal', 'cloud-files-modal')"
+            >
+                <i class="text-lg fa-solid fa-xmark"></i>
+            </button>
+        </div>
 
         <div class="mt-4 overflow-x-auto">
             <table class="w-full text-left border-collapse table-auto">

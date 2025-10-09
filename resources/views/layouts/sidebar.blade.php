@@ -57,14 +57,16 @@
             </p>
 
             <a href="#" @click.prevent="changePage('Reports')" 
-                :class="{'font-bold bg-blue-800': currentPage === 'Reports'}" class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
-                <i class="mr-1 fa-solid fa-robot"></i>
+                :class="{'font-bold bg-blue-800': currentPage === 'Reports'}" 
+                class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
+                <i class="mr-1 text-2xl fa-solid fa-clipboard-list"></i>
                 Reports
             </a>
 
             @if($role === 'Owner' || $role === 'Admin')
             <a href="#" @click.prevent="changePage('Analytics &amp; Forecasting')" 
-                :class="{'font-bold bg-blue-800': currentPage === 'Reports &amp; Analytics'}" class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
+                :class="{'font-bold bg-blue-800': currentPage === 'Analytics &amp; Forecasting'}" 
+                class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
                 <i class="mr-1 fa-solid fa-robot"></i>
                 Analytics &amp; Forecasting
             </a>
@@ -88,7 +90,7 @@
             @if($role === 'Owner' || $role === 'Admin')
             <a href="#" @click.prevent="changePage('My Inventory')" 
                 :class="{'font-bold bg-blue-800': currentPage === 'My Inventory'}" class="block w-full px-3 py-2 text-left transition rounded hover:bg-blue-700">
-                <i class="mr-2 text-xl fa-solid fa-clipboard-list"></i>
+                <i class="mr-2 text-xl fa-solid fa-box"></i>
                 My Inventory
             </a>
             @endif

@@ -25,8 +25,8 @@
             
             <!-- Caret Button to Open Modal -->
             <button x-on:click="$dispatch('open-modal', 'switch-branch')" 
-                    class="text-gray-600 hover:text-black">
-                <i class="fa-solid fa-caret-down"></i>
+                    class="px-1 text-xs text-gray-800 border border-gray-300 rounded hover:text-black hover:border hover:shadow-sm sm:text-xs md:text-xs lg:text-sm">
+                <i class="fa-solid fa-caret-down"></i> Switch Branch
             </button>
         </div>
 

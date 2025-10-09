@@ -17,6 +17,7 @@ use App\Http\Controllers\CustomerCreditController;
 use App\Http\Controllers\AttendanceEmployeeExportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\CheckoutExportController;
 
 Route::post('/register-frontend', [RegisterUserController::class, 'register']);
 
@@ -124,6 +125,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/files/upload', [FileController::class, 'store'])->name('files.upload');
     Route::delete('/files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
 });
+
+// Checkout
+Route::get('/checkout/export', [CheckoutExportController::class, 'exportCart'])->name('checkout.export');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -86,12 +86,6 @@
 <!-- Module Header -->
 <div class="flex items-center justify-between">
 
-    @if($errors->any())
-        <div class="p-2 mt-2 text-sm text-red-700 bg-red-100 rounded">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
     <div class="flex flex-col mr-5">
         <div class="flex items-center space-x-2">
             <h2 class="text-black sm:text-sm md:text-sm lg:text-lg">
@@ -113,7 +107,6 @@
 
     <!-- Search Bar --> 
     <form method="GET" action="{{ url()->current() }}" class="flex items-center space-x-2">
-        <i class="text-blue-800 fa-solid fa-filter"></i>
         <div class="flex items-center px-2 py-1 bg-white rounded shadow w-25 sm:px-5 sm:py-1 md:px-3 md:py-2 sm:w-50 md:w-52">
             <i class="mr-2 text-blue-400 fa-solid fa-magnifying-glass"></i>
             <input
@@ -223,7 +216,13 @@
                     </button>
                 </div>
             </div>
-
+            
+            @if($errors->any())
+                <div class="p-2 mt-2 text-sm text-red-700 bg-red-100 rounded">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+                            
             <div class="flex flex-col">
                 <!-- Order Items -->
                 <div id="order-items" class="pr-1 space-y-2 overflow-y-auto max-h-80"></div>
@@ -280,14 +279,117 @@
                 <input type="hidden" id="shippingField" name="shipping_fee" value="0">
                 <input type="hidden" id="totalAmountField" name="total_amount" value="0">
 
-
-                <button type="submit" class="w-full py-2 mt-4 text-white bg-blue-600 rounded-md shadow hover:bg-blue-800">
+                <!-- Original Proceed button -->
+                <button type="button" 
+                    id="proceedBtn"
+                    class="w-full py-2 mt-4 text-white bg-blue-600 rounded-md shadow hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onclick="openCartReviewModal()"
+                    disabled>
                     Proceed
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Cart Review Modal -->
+<x-modal name="cart-review" focusable>
+    <div class="p-4">
+
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="mb-4 text-lg font-semibold text-blue-800">Receipt</h2>
+            
+            <!-- Export -->
+            <div class="flex items-center space-x-4">
+                <button 
+                x-on:click="prepareExport(); $dispatch('open-modal', 'export-options')" 
+                class="flex items-center px-5 py-2 text-xs text-white transition-colors bg-green-500 rounded-md shadow hover:bg-green-700 sm:text-xs md:text-xs lg:text-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden ml-2 lg:inline">Export</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Customer -->
+        <!-- <div class="flex justify-between mb-2">
+            <span class="font-semibold">Customer:</span>
+            <span id="cartReviewCustomer">-</span>
+        </div> -->
+
+        <!-- Cart Table -->
+        <div class="overflow-x-auto max-h-80">
+            <table class="min-w-full text-sm border">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 border">Product</th>
+                        <th class="px-3 py-2 border">Qty</th>
+                        <th class="px-3 py-2 border">Unit Price</th>
+                        <th class="px-3 py-2 border">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="cartReviewTableBody"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="px-3 py-2 font-semibold text-right border">Payment Method</td>
+                        <td class="px-3 py-2 text-right border" id="cartReviewPayment">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="px-3 py-2 font-semibold text-right border">Shipping Fee</td>
+                        <td class="px-3 py-2 text-right border" id="cartReviewShipping">₱0.00</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="px-3 py-2 font-bold text-right border">Total</td>
+                        <td class="px-3 py-2 text-right border" id="cartReviewTotal">₱0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-2 mt-4">
+            <button 
+                class="px-3 py-1 text-sm text-gray-700 border rounded hover:bg-gray-100" 
+                x-on:click="$dispatch('close-modal', 'cart-review')">
+                Cancel
+            </button>
+            <button 
+                class="px-3 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-800"
+                onclick="submitSaleFromReview()">
+                Checkout
+            </button>
+        </div>
+    </div>
+</x-modal>
+
+<!-- Export Modal -->
+<x-modal name="export-options" :show="false" maxWidth="sm">
+    <div class="p-6 space-y-4 text-center">
+
+        <h2 class="text-lg font-semibold text-gray-800">Export As</h2>
+
+        <form method="GET" action="{{ route('checkout.export') }}" class="space-y-2">
+            <input type="hidden" name="cart" id="exportCartData">
+            <input type="hidden" name="payment_method" id="exportPaymentMethod">
+            <input type="hidden" name="shipping_fee" id="exportShippingFee">
+            <input type="hidden" name="total_amount" id="exportTotalAmount">
+            <input type="hidden" name="customer" id="exportCustomer">
+            <button type="submit" class="flex flex-col items-center w-24 px-4 py-3 mx-auto transition bg-green-100 rounded-lg shadow hover:bg-green-200">
+                <i class="mb-1 text-2xl text-green-600 fa-solid fa-file-excel"></i>
+                <span class="text-sm text-gray-700">Excel</span>
+            </button>
+        </form>
+
+        <!-- Cancel -->
+        <div class="flex justify-center">
+            <button 
+                x-on:click="$dispatch('close-modal', 'export-options')"
+                class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"
+            >Cancel</button>
+        </div>
+    </div>
+</x-modal>
+
+
 
 
 
@@ -705,4 +807,91 @@
             });
         }
     });
+
+    function openCartReviewModal() {
+        const tableBody = document.getElementById("cartReviewTableBody");
+        tableBody.innerHTML = "";
+
+        let subtotal = 0;
+        Object.values(cart).forEach(item => {
+            const itemSubtotal = item.qty * item.price;
+            subtotal += itemSubtotal;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="px-3 py-2 border">${item.name}</td>
+                <td class="px-3 py-2 text-center border">${item.qty}</td>
+                <td class="px-3 py-2 text-right border">₱${item.price.toFixed(2)}</td>
+                <td class="px-3 py-2 text-right border">₱${itemSubtotal.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        const shippingFee = parseFloat(document.getElementById("shipping")?.value || 0);
+        const total = subtotal + shippingFee;
+
+        // Update footer
+        document.getElementById("cartReviewTotal").textContent = "₱" + total.toFixed(2);
+        document.getElementById("cartReviewShipping").textContent = "₱" + shippingFee.toFixed(2);
+
+        const paymentMethod = document.getElementById("payment-method")?.value || "-";
+        document.getElementById("cartReviewPayment").textContent = paymentMethod;
+
+        // const customerName = document.getElementById("selectedCustomerDisplay")?.textContent || "-";
+        // document.getElementById("cartReviewCustomer").textContent = customerName;
+
+        // Open modal
+        window.dispatchEvent(new CustomEvent('open-modal', { detail: 'cart-review' }));
+    }
+
+    function submitSaleFromReview() {
+        const saleForm = document.getElementById("saleForm");
+
+        // Fill hidden fields
+        document.getElementById("cartData").value = JSON.stringify(cart);
+        document.getElementById("paymentMethodField").value = document.getElementById("payment-method").value;
+        document.getElementById("shippingField").value = document.getElementById("shipping").value;
+        document.getElementById("totalAmountField").value = parseFloat(document.getElementById("cartReviewTotal").textContent.replace('₱',''));
+        
+        // Submit form
+        saleForm.submit();
+
+        clearAllCart();
+    }
+
+    function prepareExport() {
+        document.getElementById("exportCartData").value = JSON.stringify(cart);
+        document.getElementById("exportPaymentMethod").value = document.getElementById("payment-method").value;
+        document.getElementById("exportShippingFee").value = document.getElementById("shipping")?.value || 0;
+        document.getElementById("exportTotalAmount").value = parseFloat(
+            document.getElementById("cartReviewTotal").textContent.replace('₱','')
+        );
+        document.getElementById("exportCustomer").value = document.getElementById("selectedCustomerDisplay")?.textContent || '-';
+    }
+
+    function toggleProceedButton() {
+        const customerId = document.getElementById("selectedCustomerId").value;
+        const paymentMethod = document.getElementById("payment-method").value;
+        const proceedBtn = document.getElementById("proceedBtn");
+
+        if (customerId && paymentMethod) {
+            proceedBtn.disabled = false;
+        } else {
+            proceedBtn.disabled = true;
+        }
+    }
+
+    // Run on page load
+    document.addEventListener("DOMContentLoaded", () => {
+        toggleProceedButton();
+
+        // Monitor customer selection
+        const customerInput = document.getElementById("selectedCustomerId");
+        customerInput.addEventListener("change", toggleProceedButton);
+
+        // Monitor payment method selection
+        const paymentSelect = document.getElementById("payment-method");
+        paymentSelect.addEventListener("change", toggleProceedButton);
+    });
+
 </script>

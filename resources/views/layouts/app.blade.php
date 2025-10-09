@@ -20,8 +20,9 @@
 
     // Determine current branch
     $userBranches = $owner->branches;
-    $perPage = request()->query('per_page', 5);   // <--- use request() helper
+    $perPage = request()->query('per_page', 5);
     $search  = request()->query('search');
+    $role    = request()->query('role', 'all'); // <-- role filter
 
     $mainBranch = $userBranches->sortBy('branch_id')->first();
     $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
@@ -50,10 +51,19 @@
                     ->orWhere('email',     'like', "%{$search}%");
                 });
             })
+            ->when($role != 'all', function($query) use ($role) {
+                if ($role == 'Other') {
+                    $query->whereNotIn('position', ['Cashier', 'Admin']);
+                } else {
+                    $query->where('position', $role);
+                }
+            })
             ->orderBy('employee_id', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->withQueryString();
     }
 @endphp
+
 
 <!-- My Inventory Index -->
 @php
@@ -66,14 +76,28 @@
     $currentBranch = $userBranches->where('branch_id', session('current_branch_id'))->first()
         ?? $userBranches->sortBy('branch_id')->first();
 
+    // Get query parameters
+    $search = request('search');
+    $perPage = request('per_page', 5);
+    $status = request('status', 'all');
+
     $products = Product::with([
             'product_supplier.supplier',
             'branch_products' => function($q) use ($currentBranch) {
                 $q->where('branch_id', $currentBranch->branch_id);
             }
         ])
-        ->whereHas('branch_products', function($q) use ($currentBranch) {
+        ->whereHas('branch_products', function($q) use ($currentBranch, $status) {
             $q->where('branch_id', $currentBranch->branch_id);
+
+            // Status filter
+            if ($status == 'in_stock') {
+                $q->where('stock_qty', '>=', 20);
+            } elseif ($status == 'low_stock') {
+                $q->whereBetween('stock_qty', [1, 19]);
+            } elseif ($status == 'out_of_stock') {
+                $q->where('stock_qty', 0);
+            }
         })
         ->when($search, function ($q) use ($search) {
             $q->where('prod_name', 'like', "%{$search}%");
@@ -81,7 +105,6 @@
         ->orderBy('product_id', 'desc')
         ->paginate($perPage)
         ->withQueryString();
-
 @endphp
 
 @php

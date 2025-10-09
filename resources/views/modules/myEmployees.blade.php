@@ -619,18 +619,31 @@
             <span class="ml-2 text-sm">entries</span>
         </div>
 
-        <!-- Search Bar --> 
-        <div class="flex items-center space-x-2">
-            <div class="flex items-center px-2 py-1 border rounded w-25 sm:px-5 sm:py-1 md:px-3 md:py-2 sm:w-50 md:w-52">
-                <i class="mr-2 text-blue-400 fa-solid fa-magnifying-glass"></i>
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ request('search') }}"
-                    placeholder="Search..."
-                    onkeydown="if(event.key==='Enter'){ window.location.href='?per_page={{ request('per_page',5) }}&search='+this.value; }"
-                    class="w-full py-0 text-sm bg-transparent border-none outline-none sm:py-0 md:py-1"
-                />
+        <div class="flex space-x-2">
+            <!-- Role Filter -->
+            <div class="flex items-center px-2 py-1 text-sm border rounded cursor-pointer">
+                <i class="mr-2 text-blue-400 fa-solid fa-filter"></i>
+                <select onchange="window.location.href='?per_page={{ request('per_page',5) }}&search={{ request('search') }}&role='+this.value" class="text-sm bg-transparent border-none outline-none">
+                    <option value="all" @if(request('role','all')=='all') selected @endif>All Roles</option>
+                    <option value="Admin" @if(request('role')=='Admin') selected @endif>Admin</option>
+                    <option value="Cashier" @if(request('role')=='Cashier') selected @endif>Cashier</option>
+                    <option value="Other" @if(request('role')=='Other') selected @endif>Other</option>
+                </select>
+            </div>
+
+            <!-- Search Bar --> 
+            <div class="flex items-center space-x-2">
+                <div class="flex items-center px-2 py-1 border rounded w-25 sm:px-5 sm:py-1 md:px-3 md:py-2 sm:w-50 md:w-52">
+                    <i class="mr-2 text-blue-400 fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Search..."
+                        onkeydown="if(event.key==='Enter'){ window.location.href='?per_page={{ request('per_page',5) }}&search='+this.value; }"
+                        class="w-full py-0 text-sm bg-transparent border-none outline-none sm:py-0 md:py-1"
+                    />
+                </div>
             </div>
         </div>
     </div>

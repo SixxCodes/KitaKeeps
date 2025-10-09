@@ -13,12 +13,12 @@ export default function initSidebar() {
                     POS: `<i class="mr-1 fa-solid fa-computer"></i>`,
 
                     // BUSINESS INTELLIGENCE Section
-                    "Reports": `<i class="mr-1 fa-solid fa-robot"></i>`,
+                    "Reports": `<i class="mr-1 fa-solid fa-clipboard-list"></i>`,
                     "Analytics & Forecasting": `<i class="mr-1 fa-solid fa-robot"></i>`,
 
                     // MANAGEMENT Section
                     "My Hardware": `<i class="mr-1 fa-solid fa-warehouse"></i>`,
-                    "My Inventory": `<i class="mr-2 text-xl fa-solid fa-clipboard-list"></i>`,
+                    "My Inventory": `<i class="mr-2 text-xl fa-solid fa-box"></i>`,
                     "My Suppliers": `<i class="mr-1 text-lg fa-solid fa-truck"></i>`,
                     "My Employees": `<i class="mr-1 text-sm fa-solid fa-users"></i>`,
                     "My Customers": `<i class="mr-1 text-sm fa-solid fa-users-line"></i>`,
