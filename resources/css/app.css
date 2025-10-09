@@ -4,9 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Include landing page animation helpers so they're bundled with the main CSS */
-@import "./landing-page.css";
-
 /* ==================== SIDEBAR MENU ==================== */
 /* SIDEBAR */
 /* Sidebar animation smooth slide */

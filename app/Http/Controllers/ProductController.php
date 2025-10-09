@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProductController extends Controller
 {   
@@ -229,43 +230,37 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Product updated successfully!');
     }
 
-    public function exportProducts()
+    public function exportProducts(Request $request)
     {
-        $userId = auth()->user()->user_id;
+        $user = Auth::user();
+        $userId = $user->user_id;
 
         // Get all branch IDs for the authenticated user
-        $branchIds = UserBranch::where('user_id', $userId)->pluck('branch_id');
+        $branchIds = \App\Models\UserBranch::where('user_id', $userId)->pluck('branch_id');
 
         // Get products for those branches with supplier info
-        $branchProducts = BranchProduct::whereIn('branch_id', $branchIds)
+        $branchProducts = \App\Models\BranchProduct::whereIn('branch_id', $branchIds)
             ->with(['product.product_supplier.supplier'])
             ->get();
 
-        // Create spreadsheet manually
-        $spreadsheet = new Spreadsheet();
+        // Create spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Headers
-        $headers = ['ID', 'Product Name', 'Product Supplier', 'Category', 'Qty.', 'Selling Price', 'Status'];
-        $sheet->fromArray([$headers], NULL, 'A1');
+        $headers = ['ID', 'Product Name', 'Supplier', 'Category', 'Quantity', 'Selling Price', 'Status'];
+        $sheet->fromArray([$headers], null, 'A1');
 
         // Fill rows
         $row = 2;
         foreach ($branchProducts as $bp) {
             $product = $bp->product;
-            if (!$product) continue; // skip if product missing
+            if (!$product) continue;
 
             $supplierName = optional($product->product_supplier->first()?->supplier)?->supp_name ?? 'N/A';
 
-            // Determine stock status
             $qty = $bp->stock_qty;
-            if ($qty == 0) {
-                $status = 'No Stock';
-            } elseif ($qty >= 1 && $qty <= 20) {
-                $status = 'Low Stock';
-            } else {
-                $status = 'In Stock';
-            }
+            $status = $qty == 0 ? 'No Stock' : ($qty <= 20 ? 'Low Stock' : 'In Stock');
 
             $sheet->fromArray([
                 $product->product_id,
@@ -275,34 +270,53 @@ class ProductController extends Controller
                 $qty,
                 number_format($product->selling_price, 2),
                 $status,
-            ], NULL, "A{$row}");
-
+            ], null, "A{$row}");
             $row++;
         }
 
         // Style headers
         $headerStyle = $sheet->getStyle('A1:G1');
         $headerStyle->getFont()->setBold(true);
-        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
-        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        // Auto widen columns
+        // Auto-size columns
         foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-
-        // Optional: make the Product Name and Supplier columns wider
         $sheet->getColumnDimension('B')->setWidth(40);
         $sheet->getColumnDimension('C')->setWidth(30);
 
-        // Writer & download
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'products.xlsx';
+        // Save locally
+        $filename = 'products_' . date('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // Optional: upload to Cloudinary if checked
+        if ($request->has('cloud_sync')) {
+            $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $userId,
+                'resource_type' => 'raw',
+            ]);
+
+            // Save cloud file record
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // Download file
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

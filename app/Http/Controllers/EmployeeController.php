@@ -183,8 +183,7 @@ class EmployeeController extends Controller
 
         return redirect()->back()->with('success', 'Employee updated successfully!');
     }
-
-
+    
     public function destroy($employee_id)
     {
         $employee = Employee::findOrFail($employee_id);

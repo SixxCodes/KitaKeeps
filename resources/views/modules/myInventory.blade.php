@@ -38,42 +38,41 @@
     </div>
 </div>
 
-<!-- Export -->
+<!-- Export Modal -->
 <x-modal name="export-options" :show="false" maxWidth="sm">
-    <div class="p-6 space-y-4">
+    <div class="p-6 space-y-4 text-center">
 
-        <h2 class="text-lg font-semibold text-center text-gray-800">Export As</h2>
+        <h2 class="text-lg font-semibold text-gray-800">Export As</h2>
 
-        <div class="flex justify-center mt-4 space-x-4">
-
-            <!-- Excel -->
-            <a href="{{ route('products.export') }}" class="flex flex-col items-center w-24 px-4 py-3 transition bg-green-100 rounded-lg hover:bg-green-200">
+        <form method="GET" action="{{ route('products.export') }}" class="space-y-2">
+            <!-- Export Button -->
+            <button 
+                type="submit"
+                class="flex flex-col items-center w-24 px-4 py-3 mx-auto transition bg-green-100 rounded-lg shadow hover:bg-green-200"
+            >
                 <i class="mb-1 text-2xl text-green-600 fa-solid fa-file-excel"></i>
                 <span class="text-sm text-gray-700">Excel</span>
-            </a>
+            </button>
 
-            <!-- DOCX -->
-            <!-- <button 
-                class="flex flex-col items-center w-24 px-4 py-3 transition bg-blue-100 rounded-lg hover:bg-blue-200"
-                x-on:click="exportData('docx')"
-            >
-                <i class="mb-1 text-2xl text-blue-600 fa-solid fa-file-word"></i>
-                <span class="text-sm text-gray-700">DOCX</span>
-            </button> -->
+            <!-- Upload to Cloud Option -->
+            <label class="flex items-center justify-center text-xs text-gray-600">
+                <input 
+                    type="checkbox" 
+                    name="cloud_sync" 
+                    value="1"
+                    class="mr-2 text-green-600 border-gray-300 rounded focus:ring-green-400"
+                >
+                Sync to Cloud
+            </label>
 
-            <!-- PDF -->
-            <!-- <button 
-                class="flex flex-col items-center w-24 px-4 py-3 transition bg-red-100 rounded-lg hover:bg-red-200"
-                x-on:click="exportData('pdf')"
-            >
-                <i class="mb-1 text-2xl text-red-600 fa-solid fa-file-pdf"></i>
-                <span class="text-sm text-gray-700">PDF</span>
-            </button> -->
-
-        </div>
+            <!-- Subtext -->
+            <p class="text-[11px] text-gray-400 leading-tight">
+                If unchecked, the file will only be downloaded locally.
+            </p>
+        </form>
 
         <!-- Cancel -->
-        <div class="flex justify-center mt-6">
+        <div class="flex justify-center">
             <button 
                 x-on:click="$dispatch('close-modal', 'export-options')"
                 class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300"

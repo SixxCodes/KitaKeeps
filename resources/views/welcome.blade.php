@@ -26,11 +26,6 @@
     
     <!-- Vite built CSS/JS (production) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    {{-- Also include legacy landing-page.css from public/assets if you kept a custom stylesheet there --}}
-    @if (file_exists(public_path('assets/css/landing-page.css')))
-        <link rel="stylesheet" href="{{ asset('assets/css/landing-page.css') }}">
-    @endif
 </head>
 
 <body class="bg-gradient-to-b from-blue-50 to-white">

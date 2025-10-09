@@ -89,7 +89,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function exportCustomers()
+    public function exportCustomers(Request $request)
     {
         $branchId = session('current_branch_id');
         if (!$branchId) {
@@ -179,13 +179,39 @@ class CustomerController extends Controller
             $sheet2->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Export
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $filename = 'customers.xlsx';
+        // === Save to temp file ===
+        $filename = 'customers_' . date('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // === Optional: Sync to Cloud ===
+        if ($request->has('cloud_sync')) {
+            $user = auth()->user();
+
+            try {
+                $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                    'folder' => 'user_files/' . $user->user_id,
+                    'resource_type' => 'raw',
+                ]);
+
+                $user->files()->create([
+                    'filename' => $filename,
+                    'file_url' => $uploadResult['secure_url'] ?? null,
+                    'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'file_size' => filesize($tempPath),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Cloud upload failed: ' . $e->getMessage());
+            }
+        }
+
+        // === Download response ===
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
     public function exportCredits(Request $request)
@@ -272,9 +298,32 @@ class CustomerController extends Controller
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $filename = 'paid_credits_' . now()->format('Ymd_His') . '.xlsx';
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        // ================= Save locally =================
+        $tempPath = storage_path('app/public/exports/' . $filename);
+
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer->save($tempPath);
+
+        // ================= Optional Cloud Sync =================
+        if ($request->has('cloud_sync')) {
+            $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $user->user_id,
+                'resource_type' => 'raw',
+            ]);
+
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // ================= Download Response =================
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

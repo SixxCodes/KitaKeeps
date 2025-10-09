@@ -76,7 +76,7 @@ class AttendanceController extends Controller
         return view('attendance.index', compact('employees'));
     }
 
-    public function exportAttendance()
+    public function exportAttendance(Request $request)
     {   
         $user = auth()->user();
         $search = request('att_search');
@@ -176,11 +176,34 @@ class AttendanceController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $filename = 'attendance.xlsx';
+        $filename = 'attendance_' . now()->format('Ymd_His') . '.xlsx';
 
-        return response()->streamDownload(function() use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        // ================= Save locally =================
+        $tempPath = storage_path('app/public/exports/' . $filename);
+
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer->save($tempPath);
+
+        // ================= Optional Cloud Sync =================
+        if ($request->has('cloud_sync')) {
+            $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $user->user_id,
+                'resource_type' => 'raw',
+            ]);
+
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // ================= Download Response =================
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

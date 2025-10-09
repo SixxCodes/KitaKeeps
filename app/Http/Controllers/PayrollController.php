@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Models\Payroll;
 use Illuminate\Support\Facades\Auth;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class PayrollController extends Controller
 {
@@ -45,7 +46,7 @@ class PayrollController extends Controller
         return back()->with('success', 'Salary has been paid!');
     }
 
-    public function exportPayroll()
+    public function exportPayroll(Request $request)
     {
         $user = auth()->user();
         $search = request('payroll_search');
@@ -146,12 +147,38 @@ class PayrollController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'payroll.xlsx';
+        // === Save to temp path
+        $filename = 'payroll_' . date('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
 
-        return response()->streamDownload(function() use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // === Optional: Sync to Cloud ===
+        if ($request->has('cloud_sync')) {
+            try {
+                $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                    'folder' => 'user_files/' . $user->user_id,
+                    'resource_type' => 'raw',
+                ]);
+
+                $user->files()->create([
+                    'filename' => $filename,
+                    'file_url' => $uploadResult['secure_url'] ?? null,
+                    'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'file_size' => filesize($tempPath),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Payroll Cloud Upload Failed: ' . $e->getMessage());
+            }
+        }
+
+        // === Return file download
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

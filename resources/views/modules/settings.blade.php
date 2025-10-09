@@ -154,13 +154,29 @@
                 Sync Now
             </button>
         </div> -->
-    </div>
 
-    <!-- Footer Branding -->
-    <footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
-        © 2025 KitaKeeps. All rights reserved.
-    </footer>
+        <!-- Your Files Card -->
+        <div class="flex items-center justify-between p-4 transition bg-white border rounded-lg shadow-sm dark:bg-gray-800 hover:shadow-md">
+            <div class="flex items-center space-x-3">
+                <i class="text-xl text-indigo-600 fa-solid fa-cloud"></i>
+                <div>
+                    <p class="font-medium text-gray-800 dark:text-gray-200">Your Files</p>
+                    <p class="text-sm text-gray-500">View files you’ve stored in the cloud.</p>
+                </div>
+            </div>
+            <button 
+                x-data 
+                x-on:click="$dispatch('open-modal', 'cloud-files-modal')" 
+                class="px-3 py-1 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700">
+                View
+            </button>
+        </div>
 </div>
+
+<!-- Footer Branding -->
+<footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
+    © 2025 KitaKeeps. All rights reserved.
+</footer>
 
 <!-- Modal -->
 <x-modal name="update-modal" :show="false" maxWidth="sm">
@@ -425,5 +441,54 @@
                 Close
             </button>
         </div>
+    </div>
+</x-modal>
+
+<!-- Cloud Files Modal -->
+<x-modal name="cloud-files-modal" :show="false" maxWidth="2xl">
+    <div class="p-6 max-h-[80vh] overflow-y-auto">
+
+        <h2 class="text-lg font-semibold text-center text-gray-800">Your Cloud Files</h2>
+
+        <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-left border-collapse table-auto">
+                <thead>
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="px-4 py-2 border whitespace-nowrap">Filename</th>
+                        <th class="px-4 py-2 border whitespace-nowrap">URL</th>
+                        <th class="px-4 py-2 border whitespace-nowrap">File Size</th>
+                        <th class="px-4 py-2 border whitespace-nowrap">Uploaded At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(auth()->user()->files as $file)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <td class="px-4 py-2 border whitespace-nowrap">{{ $file->filename }}</td>
+                            <td class="px-4 py-2 border whitespace-nowrap">
+                                <a href="{{ $file->file_url }}" target="_blank" class="text-indigo-600 hover:underline">
+                                    View File
+                                </a>
+                            </td>
+                            <td class="px-4 py-2 border whitespace-nowrap">{{ number_format($file->file_size / 1024, 2) }} KB</td>
+                            <td class="px-4 py-2 border whitespace-nowrap">{{ $file->created_at->format('Y-m-d H:i') }}</td>
+                        </tr>
+                    @endforeach
+                    @if(auth()->user()->files->isEmpty())
+                        <tr>
+                            <td colspan="4" class="px-4 py-2 text-center text-gray-500">No files found.</td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-center mt-6">
+            <button 
+                x-on:click="$dispatch('close-modal', 'cloud-files-modal')" 
+                class="px-4 py-2 text-gray-700 transition bg-gray-200 rounded hover:bg-gray-300">
+                Close
+            </button>
+        </div>
+
     </div>
 </x-modal>

@@ -65,6 +65,19 @@ return [
             'root'   => storage_path('app/private'),
         ],
 
+        'cloudinary' => [
+            'driver' => 'cloudinary',
+            // The package will accept either a 'url' (CLOUDINARY_URL) or 'cloud', 'key', 'secret' keys.
+            // Prefer using CLOUDINARY_URL; fallback to individual env vars if needed.
+            'url' => env('CLOUDINARY_URL'),
+            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
+            'key' => env('CLOUDINARY_API_KEY'),
+            'secret' => env('CLOUDINARY_API_SECRET'),
+            'secure' => env('CLOUDINARY_SECURE', true),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

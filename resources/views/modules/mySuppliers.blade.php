@@ -63,12 +63,29 @@
         <div class="flex justify-center mt-4 space-x-4">
 
             <!-- Excel -->
-            <a href="{{ route('suppliers.export') }}"
-            class="flex flex-col items-center w-24 px-4 py-3 transition bg-green-100 rounded-lg hover:bg-green-200"
-            >
-                <i class="mb-1 text-2xl text-green-600 fa-solid fa-file-excel"></i>
-                <span class="text-sm text-gray-700">Excel</span>
-            </a>
+            <form method="GET" action="{{ route('suppliers.export') }}" class="flex flex-col items-center space-y-2">
+                <button 
+                    type="submit" 
+                    class="flex flex-col items-center justify-center w-24 px-4 py-3 transition bg-green-100 rounded-lg shadow hover:bg-green-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                >
+                    <i class="mb-1 text-2xl text-green-600 fa-solid fa-file-excel"></i>
+                    <span class="text-sm text-gray-700">Excel</span>
+                </button>
+
+                <label class="flex items-center justify-center text-xs text-gray-600">
+                    <input 
+                        type="checkbox" 
+                        name="cloud_sync" 
+                        value="1"
+                        class="mr-1 text-green-600 border-gray-300 rounded focus:ring-green-400"
+                    >
+                    Sync to Cloud
+                </label>
+                <!-- Subtext -->
+                <p class="text-[11px] text-gray-400 leading-tight">
+                    If unchecked, the file will only be downloaded locally.
+                </p>
+            </form>
 
             <!-- DOCX -->
             <!-- <button 

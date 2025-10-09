@@ -16,6 +16,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\CustomerCreditController;
 use App\Http\Controllers\AttendanceEmployeeExportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\FileController;
 
 Route::post('/register-frontend', [RegisterUserController::class, 'register']);
 
@@ -73,7 +74,9 @@ Route::get('/attendance/export', [\App\Http\Controllers\AttendanceController::cl
 
 // Salary
 Route::post('/pay-salary/{employee}', [PayrollController::class, 'paySalary'])->name('pay-salary');
-Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
+Route::get('/payroll/export', [PayrollController::class, 'exportPayroll'])
+    ->name('payroll.export')
+    ->middleware('auth');
 
 // Products
 Route::post('/products', [ProductController::class, 'store'])->name('products.store');
@@ -114,6 +117,13 @@ Route::get('/forecast/{branch}', [App\Http\Controllers\ForecastController::class
 Route::post('/user/update-profile', [UserController::class, 'updateProfile'])
     ->name('user.updateProfile')
     ->middleware('auth');
+
+// Cloud
+Route::middleware(['auth'])->group(function () {
+    Route::get('/files', [FileController::class, 'index'])->name('files.index');
+    Route::post('/files/upload', [FileController::class, 'store'])->name('files.upload');
+    Route::delete('/files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

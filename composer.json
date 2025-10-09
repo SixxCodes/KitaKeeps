@@ -7,7 +7,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "cloudinary-labs/cloudinary-laravel": "^3.0",
+        "google/apiclient": "*",
         "laravel/framework": "^11.0",
+        "laravel/socialite": "*",
         "laravel/tinker": "^2.10.1",
         "openai-php/laravel": "^0.17.1",
         "phpoffice/phpspreadsheet": "1.28",

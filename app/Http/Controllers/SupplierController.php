@@ -12,6 +12,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Models\File;
+use Illuminate\Support\Str;
 
 class SupplierController extends Controller
 {
@@ -116,17 +119,16 @@ class SupplierController extends Controller
         }
     }
 
-    public function exportSuppliers()
+    public function exportSuppliers(Request $request)
     {
-        $userId = auth()->user()->user_id;
+        $user = Auth::user();
+        $userId = $user->user_id;
 
         // Get all branch IDs for the authenticated user
-        $branchIds = UserBranch::where('user_id', $userId)->pluck('branch_id');
+        $branchIds = $user->branches->pluck('branch_id');
 
         // Get suppliers in those branches
-        $suppliers = Supplier::whereIn('branch_id', $branchIds)
-            ->with('branch') // eager load branch name
-            ->get();
+        $suppliers = Supplier::whereIn('branch_id', $branchIds)->get();
 
         // Create spreadsheet
         $spreadsheet = new Spreadsheet();
@@ -134,44 +136,63 @@ class SupplierController extends Controller
 
         // Headers
         $headers = ['ID', 'Supplier Name', 'Contact', 'Address'];
-        $sheet->fromArray([$headers], NULL, 'A1');
+        $sheet->fromArray([$headers], null, 'A1');
 
         // Fill rows
         $row = 2;
         foreach ($suppliers as $supplier) {
-            $branchName = optional($supplier->branch)?->branch_name ?? 'N/A';
-
             $sheet->fromArray([
                 $supplier->supplier_id,
                 $supplier->supp_name,
                 $supplier->supp_contact ?? 'N/A',
                 $supplier->supp_address ?? 'N/A',
-            ], NULL, "A{$row}");
+            ], null, "A{$row}");
             $row++;
         }
 
         // Style headers
         $headerStyle = $sheet->getStyle('A1:D1');
         $headerStyle->getFont()->setBold(true);
-        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
-        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         // Auto widen columns
         foreach (range('A', 'D') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
-
-        // Optional: widen address column
         $sheet->getColumnDimension('D')->setWidth(40);
 
-        // Writer & download
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'suppliers.xlsx';
+        // Save locally to temp path
+        $filename = 'suppliers_' . date('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // Optional: upload to cloud
+        if ($request->has('cloud_sync')) {
+            // The exported spreadsheet is a binary file (XLSX). Upload as a raw resource
+            $uploadResult = Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $userId,
+                'resource_type' => 'raw',
+            ]);
+
+            // Save record in DB — ApiResponse behaves like an array
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // Return download response
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

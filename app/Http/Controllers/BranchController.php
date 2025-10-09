@@ -12,6 +12,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Storage;
 
 class BranchController extends Controller
 {
@@ -178,22 +180,26 @@ class BranchController extends Controller
         return back()->with('error', 'Unauthorized to switch to this branch.');
     }
     
-    public function export()
+    public function export(Request $request)
     {
-        $userId = auth()->user()->user_id;
+        $user = Auth::user();
+        $userId = $user->user_id;
+
+        // Get all branch IDs for the authenticated user
         $branchIds = \App\Models\UserBranch::where('user_id', $userId)->pluck('branch_id');
 
+        // Fetch branches
         $branches = Branch::whereIn('branch_id', $branchIds)
             ->select('branch_id', 'branch_name', 'location')
             ->get();
 
-        // Create spreadsheet manually for styling
-        $spreadsheet = new Spreadsheet();
+        // Create spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Headers
         $headers = ['Branch ID', 'Branch Name', 'Location'];
-        $sheet->fromArray([$headers], NULL, 'A1');
+        $sheet->fromArray([$headers], null, 'A1');
 
         // Fill rows
         $row = 2;
@@ -202,33 +208,52 @@ class BranchController extends Controller
                 $branch->branch_id,
                 $branch->branch_name,
                 $branch->location,
-            ], NULL, "A{$row}");
+            ], null, "A{$row}");
             $row++;
         }
 
         // Style headers
         $headerStyle = $sheet->getStyle('A1:C1');
         $headerStyle->getFont()->setBold(true);
-        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
-        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFDA');
+        $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         // Auto widen columns
         foreach (range('A', 'C') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
+        $sheet->getColumnDimension('C')->setWidth(40);
 
-        // You can also manually set a minimum width for specific columns:
-        $sheet->getColumnDimension('C')->setWidth(40); // Location column wider
+        // Save locally to temp path
+        $filename = 'branches_' . date('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
 
-        // Generate Excel file
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'branches.xlsx';
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
 
-        // Download response
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // Optional: upload to cloud
+        if ($request->has('cloud_sync')) {
+            $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $userId,
+                'resource_type' => 'raw',
+            ]);
+
+            // Save record in DB
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // Return download response
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }

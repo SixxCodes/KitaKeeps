@@ -81,4 +81,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(StockMovement::class, 'created_by', 'user_id');
     }
+
+    public function files()
+    {
+        return $this->hasMany(File::class, 'user_id', 'user_id');
+    }
+
 }

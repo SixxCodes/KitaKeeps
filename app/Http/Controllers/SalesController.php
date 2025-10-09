@@ -348,12 +348,34 @@ class SalesController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $writer = new Xlsx($spreadsheet);
+        // ================= Save locally =================
         $filename = 'sales_export_' . now()->format('Ymd_His') . '.xlsx';
+        $tempPath = storage_path('app/public/exports/' . $filename);
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename);
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0755, true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        // ================= Optional Cloud Upload =================
+        if ($request->has('cloud_sync')) {
+            $uploadResult = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload($tempPath, [
+                'folder' => 'user_files/' . $user->user_id,
+                'resource_type' => 'raw',
+            ]);
+
+            $user->files()->create([
+                'filename' => $filename,
+                'file_url' => $uploadResult['secure_url'] ?? null,
+                'file_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'file_size' => filesize($tempPath),
+            ]);
+        }
+
+        // ================= Download Response =================
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 }
