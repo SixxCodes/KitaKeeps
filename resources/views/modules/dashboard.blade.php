@@ -92,6 +92,10 @@
         })
         ->sum('quantity');
 
+    // --- % of stock sold this week ---
+    $totalUnits = $totalStockQty + $totalSoldQty;
+    $weeklySoldPercent = $totalUnits > 0 ? round(($totalSoldQty / $totalUnits) * 100, 1) : 0;
+
     // --- Calculate percentages ---
     $totalUnits = $totalStockQty + $totalSoldQty;
     $soldPercent = $totalUnits > 0 ? round(($totalSoldQty / $totalUnits) * 100, 1) : 0;
@@ -219,9 +223,13 @@
             <span class="text-sm text-gray-500">Total Inventory Value</span>
         </div>
         <h2 class="text-2xl font-bold text-blue-500">₱{{ number_format($totalInventoryValue, 2) }}</h2>
-        <p class="mt-1 text-sm {{ $inventoryChange >= 0 ? 'text-green-500' : 'text-red-500' }}">
+        <!-- <p class="mt-1 text-sm {{ $inventoryChange >= 0 ? 'text-green-500' : 'text-red-500' }}">
             {{ $inventoryChange >= 0 ? '▲' : '▼' }} {{ abs($inventoryChange) }}%
             <span class="text-gray-500">this week</span>
+        </p> -->
+        <p class="mt-1 text-sm {{ $weeklySoldPercent > 0 ? 'text-green-500' : 'text-red-500' }}">
+            {{ $weeklySoldPercent > 0 ? '▲' : '▼' }} {{ $weeklySoldPercent }}%
+            <span class="text-gray-500"> sold this week</span>
         </p>
         </div>
 

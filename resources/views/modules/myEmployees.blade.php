@@ -169,8 +169,14 @@
                     <!-- Username -->
                     <div>
                         <label class="block mb-1 text-gray-800">Username</label>
-                        <input type="text" name="username" placeholder="e.g., john.doe"
-                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
+                        <input 
+                            type="text" 
+                            name="username"
+                            placeholder="e.g., john.doe"
+                            x-bind:required="position.toLowerCase() === 'cashier' || position.toLowerCase() === 'admin'"
+                            x-bind:pattern="(position.toLowerCase() === 'cashier' || position.toLowerCase() === 'admin') ? '^[a-zA-Z][a-zA-Z0-9._]{2,19}$' : ''"
+                            title="Username must start with a letter, 3-20 characters, letters, numbers, dots or underscores only" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                        />
                     </div>
 
                     <!-- Password -->
@@ -180,7 +186,11 @@
                             type="password" 
                             name="password" 
                             placeholder="Enter password"
-                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
+                            x-bind:required="position.toLowerCase() === 'cashier' || position.toLowerCase() === 'admin'"
+                            x-bind:pattern="(position.toLowerCase() === 'cashier' || position.toLowerCase() === 'admin') ? '(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}' : ''"
+                            title="Password must be at least 8 characters, include 1 uppercase letter and 1 special character"
+                            class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                        />
                     </div>
                 </div>
             </fieldset>
