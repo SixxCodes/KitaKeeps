@@ -185,11 +185,6 @@
 </div>
 
 
-<!-- Footer Branding -->
-<footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
-    © 2025 KitaKeeps. All rights reserved.
-</footer>
-
 <!-- Modal -->
 <x-modal name="update-modal" :show="false" maxWidth="sm">
     <div x-data="{ loading: true }" x-init="setTimeout(() => loading = false, 3000)" class="p-6 text-center">
@@ -389,7 +384,7 @@
 </x-modal>
 
 <!-- Help Modal -->
-<x-modal name="help-modal" :show="false" maxWidth="sm">
+<x-modal name="help-modal" :show="false" maxWidth="2xl">
     <div class="p-6 space-y-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
@@ -406,28 +401,35 @@
         <!-- Socials Grid -->
         <section>
             <h3 class="mb-3 text-lg font-semibold text-blue-800">Follow us on Socials</h3>
-            <div class="w-full">
+            <div class="grid grid-cols-2 gap-4 sm:flex sm:justify-center">
                 <!-- Facebook -->
                 <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
-                   class="flex flex-col items-center p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
+                   class="flex flex-col items-center flex-1 p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
                     <i class="text-4xl text-blue-600 fa-brands fa-facebook"></i>
                     <span class="mt-2 font-medium text-gray-700">Facebook</span>
+                </a>
+
+                <!-- Tiktok -->
+                <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+                   class="flex flex-col items-center flex-1 p-4 transition rounded-lg shadow bg-blue-50 hover:shadow-md">
+                    <i class="text-4xl text-black fa-brands fa-tiktok"></i>
+                    <span class="mt-2 font-medium text-gray-700">Tiktok</span>
                 </a>
             </div>
         </section>
 
         <!-- Contact Emails -->
-        <!-- <section>
+        <section>
             <h3 class="mb-3 text-lg font-semibold text-blue-800">Contact Us</h3>
             <div class="grid grid-cols-1 gap-2 text-gray-700 sm:grid-cols-2">
-                <a href="mailto:vienugay@gmail.com" class="underline hover:text-blue-600">vienugay@gmail.com</a>
-                <a href="mailto:merryfeguisihan@gmail.com" class="underline hover:text-blue-600">merryfeguisihan@gmail.com</a>
-                <a href="mailto:crisostomokennymadayag@gmail.com" class="underline hover:text-blue-600">crisostomokennymadayag@gmail.com</a>
+                <a href="mailto:m.fguisihan@gmail.com" class="underline hover:text-blue-600">m.fguisihan@gmail.com</a>
                 <a href="mailto:latoza@gmail.com" class="underline hover:text-blue-600">latoza@gmail.com</a>
-                <a href="mailto:mapuro@gmail.com" class="underline hover:text-blue-600">mapuro@gmail.com</a>
+                <a href="mailto:crisostomokennymadayag@gmail.com" class="underline hover:text-blue-600">crisostomokennymadayag@gmail.com</a>
+                <a href="mailto:mapuro@gmail.com" class="underline hover:text-blue-600">c.mapuro.143778.tc@umindanao.edu.ph</a>
                 <a href="mailto:nabre2@gmail.com" class="underline hover:text-blue-600">nabre2@gmail.com</a>
+                <a href="mailto:vienugay@gmail.com" class="underline hover:text-blue-600">vienugay@gmail.com</a>
             </div>
-        </section> -->
+        </section>
 
         <!-- Close Button -->
         <div class="flex justify-end mt-4">
@@ -500,3 +502,21 @@
 
     </div>
 </x-modal>
+
+<!-- Footer Branding -->
+<footer class="flex flex-col items-center justify-between py-4 text-sm text-gray-400 border-t sm:flex-row">
+    <!-- Left / Center Text -->
+    <p class="mb-2 sm:mb-0">© 2025 KitaKeeps. All rights reserved.</p>
+
+    <!-- Right / Social Icons -->
+    <div class="flex space-x-3">
+        <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
+           class="transition hover:text-blue-600">
+            <i class="text-lg fa-brands fa-facebook"></i>
+        </a>
+        <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+           class="transition hover:text-black">
+            <i class="text-lg fa-brands fa-tiktok"></i>
+        </a>
+    </div>
+</footer>

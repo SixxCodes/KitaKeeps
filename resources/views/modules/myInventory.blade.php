@@ -493,8 +493,9 @@
             <!-- Product Image -->
             <div class="flex flex-col items-center mb-6">
                 <div class="relative w-24 h-24">
+                    
                     <img id="preview_{{ $product->product_id }}" 
-                        src="{{ $product->prod_image_path ? asset('storage/'.$product->prod_image_path) : asset('assets/images/default-box.png') }}" 
+                        src="{{ $product->prod_image_path ? asset('storage/'.$product->prod_image_path) : 'assets/images/logo/logo-removebg-preview.png' }}" 
                         class="object-cover w-full h-full border rounded-full shadow" 
                         alt="{{ $product->prod_name }}">
 
@@ -688,6 +689,19 @@ function previewImage(event, id) {
 </x-modal>
 
 <!-- Footer Branding -->
-<footer class="py-4 text-sm text-center text-gray-400 border-t">
-    © 2025 KitaKeeps. All rights reserved.
+<footer class="flex flex-col items-center justify-between py-4 text-sm text-gray-400 border-t sm:flex-row">
+    <!-- Left / Center Text -->
+    <p class="mb-2 sm:mb-0">© 2025 KitaKeeps. All rights reserved.</p>
+
+    <!-- Right / Social Icons -->
+    <div class="flex space-x-3">
+        <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
+           class="transition hover:text-blue-600">
+            <i class="text-lg fa-brands fa-facebook"></i>
+        </a>
+        <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+           class="transition hover:text-black">
+            <i class="text-lg fa-brands fa-tiktok"></i>
+        </a>
+    </div>
 </footer>

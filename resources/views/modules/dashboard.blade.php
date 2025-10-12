@@ -909,6 +909,19 @@
 </x-modal>
 
 <!-- Footer Branding -->
-<footer class="py-4 text-sm text-center text-gray-400 border-t mt-15">
-    © 2025 KitaKeeps. All rights reserved.
+<footer class="flex flex-col items-center justify-between py-4 text-sm text-gray-400 border-t sm:flex-row">
+    <!-- Left / Center Text -->
+    <p class="mb-2 sm:mb-0">© 2025 KitaKeeps. All rights reserved.</p>
+
+    <!-- Right / Social Icons -->
+    <div class="flex space-x-3">
+        <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
+           class="transition hover:text-blue-600">
+            <i class="text-lg fa-brands fa-facebook"></i>
+        </a>
+        <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+           class="transition hover:text-black">
+            <i class="text-lg fa-brands fa-tiktok"></i>
+        </a>
+    </div>
 </footer>

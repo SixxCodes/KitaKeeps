@@ -33,7 +33,7 @@ class ForecastAIGenerator
         // Create a natural-language prompt for OpenAI
         $prompt = "You are an inventory AI assistant. Generate a short AI-based sales forecast summary for branch '{$branch->branch_name}'.
         Each product has the following data:\n\n" . json_encode($productSummaries, JSON_PRETTY_PRINT) . "\n\n
-        Describe expected sales and give short advice (e.g., restock suggestions or best sellers). Be concise and readable. In the end, give advice, act like you are predicting the future base on this sales.";
+        Describe expected sales and give short advice (e.g., restock suggestions or best sellers). Be concise and readable. In the end, give advice, act like you are predicting the future base on this sales. Limit each product summary to only 2 lines with few concise and direct words or explanation.";
 
         // Send to OpenAI
         $response = OpenAI::responses()->create([

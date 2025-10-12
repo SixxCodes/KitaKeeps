@@ -176,7 +176,10 @@
                     <!-- Password -->
                     <div>
                         <label class="block mb-1 text-gray-800">Password</label>
-                        <input type="password" name="password" placeholder="Enter password"
+                        <input 
+                            type="password" 
+                            name="password" 
+                            placeholder="Enter password"
                             class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500"/>
                     </div>
                 </div>
@@ -1027,6 +1030,19 @@
 </x-modal>
 
 <!-- Footer Branding -->
-<footer class="py-4 text-sm text-center text-gray-400 border-t">
-    © 2025 KitaKeeps. All rights reserved.
+<footer class="flex flex-col items-center justify-between py-4 text-sm text-gray-400 border-t sm:flex-row">
+    <!-- Left / Center Text -->
+    <p class="mb-2 sm:mb-0">© 2025 KitaKeeps. All rights reserved.</p>
+
+    <!-- Right / Social Icons -->
+    <div class="flex space-x-3">
+        <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
+           class="transition hover:text-blue-600">
+            <i class="text-lg fa-brands fa-facebook"></i>
+        </a>
+        <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+           class="transition hover:text-black">
+            <i class="text-lg fa-brands fa-tiktok"></i>
+        </a>
+    </div>
 </footer>

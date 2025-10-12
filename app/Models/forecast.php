@@ -40,4 +40,25 @@ class Forecast extends Model
         return $this->belongsTo(BranchProduct::class, 'branch_product_id', 'branch_product_id');
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($forecast) {
+            if ($forecast->branch_product_id) {
+                $branchId = $forecast->forecastbelongsTobranch_product->branch_id ?? null;
+                if ($branchId) {
+                    \App\Actions\ForecastAIGenerator::generateForBranch($branchId);
+                }
+            }
+        });
+
+        static::deleted(function ($forecast) {
+            if ($forecast->branch_product_id) {
+                $branchId = $forecast->forecastbelongsTobranch_product->branch_id ?? null;
+                if ($branchId) {
+                    \App\Actions\ForecastAIGenerator::generateForBranch($branchId);
+                }
+            }
+        });
+    }
+
 }

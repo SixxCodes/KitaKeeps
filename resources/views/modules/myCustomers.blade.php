@@ -357,7 +357,7 @@
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-500">Customers with Credit</span>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">{{ $customersWithCredit }}</h2>
+            <h2 class="text-2xl font-bold text-orange-500">{{ $customersWithCredit }}</h2>
             <!-- <p class="mt-1 text-sm {{ $customersPercent >= 0 ? 'text-green-500' : 'text-red-500' }}">
                 {{ $customersPercent >= 0 ? '▲' : '▼' }} {{ abs($customersPercent) }}% 
                 <span class="text-gray-500">this week</span>
@@ -369,7 +369,7 @@
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-500">Due This Week</span>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">{{ $dueThisWeek }}</h2>
+            <h2 class="text-2xl font-bold text-red-500">{{ $dueThisWeek }}</h2>
             <!-- <p class="mt-1 text-sm {{ $duePercent >= 0 ? 'text-green-500' : 'text-red-500' }}">
                 {{ $duePercent >= 0 ? '▲' : '▼' }} {{ abs($duePercent) }}% 
                 <span class="text-gray-500">this week</span>
@@ -381,7 +381,7 @@
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-500">Total Receivables</span>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">₱{{ number_format($totalReceivables, 2) }}</h2>
+            <h2 class="text-2xl font-bold text-green-500">₱{{ number_format($totalReceivables, 2) }}</h2>
             <!-- <p class="mt-1 text-sm {{ $totalPercent >= 0 ? 'text-green-500' : 'text-red-500' }}">
                 {{ $totalPercent >= 0 ? '▲' : '▼' }} {{ abs($totalPercent) }}% 
                 <span class="text-gray-500">this week</span>
@@ -502,7 +502,7 @@
     <!-- Pagination -->
     <div class="flex items-center justify-between mt-4">
         <p class="text-sm">
-            Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} entries
+            <!-- Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} entries -->
         </p>
         <div class="flex gap-2">
             <a href="{{ $customers->previousPageUrl() }}" 
@@ -550,11 +550,19 @@
                                 <td class="px-3 py-2 border whitespace-nowrap">₱{{ number_format($sale->total_amount, 2) }}</td>
                                 <td class="flex justify-center gap-2 px-3 py-2 border">
 
+                                    <!-- View what product gipalit -->
+                                        <button 
+                                            x-on:click="$dispatch('open-modal', 'view-credits-sale-{{ $sale->sale_id }}')"
+                                            class="px-2 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                        >
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
                                     <!-- Pay Form -->
                                         <button type="submit" 
                                             class="px-2 py-1 text-white bg-green-500 rounded hover:bg-green-600"
                                                 x-on:click="$dispatch('open-modal', 'confirm-pay-{{ $sale->sale_id }}')"                                        >
-                                            <i class="fa-solid fa-peso-sign"></i> Pay
+                                            <i class="fa-solid fa-money-bill-wave"></i>
                                         </button>
 
                                     <!-- Delete Form -->
@@ -562,7 +570,7 @@
                                             class="px-2 py-1 text-white bg-red-500 rounded hover:bg-red-600"
                                             x-on:click="$dispatch('open-modal', 'confirm-delete-{{ $sale->sale_id }}')"
                                         >
-                                            <i class="fa-solid fa-trash"></i> Delete
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
 
                                 </td>
@@ -608,6 +616,78 @@
             </div>
         </div>
     </x-modal>
+@endforeach
+
+<!-- View Individual Sale Products Modal -->
+@foreach($creditCustomers as $customer)
+    @foreach($customer->sales as $sale)
+        <x-modal name="view-credits-sale-{{ $sale->sale_id }}" :show="false" maxWidth="2xl">
+            <div class="p-6 overflow-y-auto max-h-[80vh] table-pretty-scrollbar">
+                <!-- Header -->
+                <div class="flex items-center mb-4 space-x-1 text-blue-900">
+                    <i class="fa-solid fa-box-open"></i>
+                    <h2 class="text-xl font-semibold">
+                        Sale #{{ $sale->sale_id }} – {{ $customer->cust_name }}
+                    </h2>
+                </div>
+
+                <!-- Products Table -->
+                <div class="overflow-x-auto max-h-80">
+                    <table class="min-w-full text-sm border">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 border">Product</th>
+                                <th class="px-3 py-2 border">Qty</th>
+                                <th class="px-3 py-2 border">Unit Price</th>
+                                <th class="px-3 py-2 border">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($sale->sale_items as $item)
+                                @php
+                                    $product = $item->sale_itembelongsTobranch_product->product ?? null;
+                                @endphp
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 py-2 border whitespace-nowrap">
+                                        {{ $product?->prod_name ?? 'Unknown Product' }}
+                                    </td>
+                                    <td class="px-3 py-2 text-center border">{{ $item->quantity }}</td>
+                                    <td class="px-3 py-2 text-right border">
+                                        ₱{{ number_format($item->unit_price, 2) }}
+                                    </td>
+                                    <td class="px-3 py-2 text-right border">
+                                        ₱{{ number_format($item->subtotal, 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="px-3 py-2 font-semibold text-right border">Payment Type</td>
+                                <td class="px-3 py-2 text-right border">{{ $sale->payment_type }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="px-3 py-2 font-bold text-right border">Total</td>
+                                <td class="px-3 py-2 text-right border">
+                                    ₱{{ number_format($sale->total_amount, 2) }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex justify-end mt-4">
+                    <button 
+                        x-on:click="$dispatch('close-modal', 'view-credits-sale-{{ $sale->sale_id }}')"
+                        class="px-4 py-2 text-white transition bg-blue-600 rounded hover:bg-blue-700"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </x-modal>
+    @endforeach
 @endforeach
 
 <!-- Pay -->
@@ -1132,6 +1212,19 @@
 </x-modal>
 
 <!-- Footer Branding -->
-<footer class="py-4 text-sm text-center text-gray-400 border-t">
-    © 2025 KitaKeeps. All rights reserved.
+<footer class="flex flex-col items-center justify-between py-4 text-sm text-gray-400 border-t sm:flex-row">
+    <!-- Left / Center Text -->
+    <p class="mb-2 sm:mb-0">© 2025 KitaKeeps. All rights reserved.</p>
+
+    <!-- Right / Social Icons -->
+    <div class="flex space-x-3">
+        <a href="https://www.facebook.com/profile.php?id=61581974522036" target="_blank" 
+           class="transition hover:text-blue-600">
+            <i class="text-lg fa-brands fa-facebook"></i>
+        </a>
+        <a href="https://www.tiktok.com/@kitakeeps" target="_blank" 
+           class="transition hover:text-black">
+            <i class="text-lg fa-brands fa-tiktok"></i>
+        </a>
+    </div>
 </footer>
