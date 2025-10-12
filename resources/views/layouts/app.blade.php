@@ -64,7 +64,6 @@
     }
 @endphp
 
-
 <!-- My Inventory Index -->
 @php
     use App\Models\Product;
@@ -190,7 +189,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 min-h-screen overflow-x-hidden overflow-y-auto pb-15">
+        <div class="flex-1 min-h-screen overflow-x-hidden overflow-y-auto pb-15" v-cloak>
             <!-- Navbar -->
             @include('layouts.navbar')
 

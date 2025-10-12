@@ -4,6 +4,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide content until Vue is mounted */
+[v-cloak] > * {
+    display: none;
+}
+
+/* Fullscreen centered loader */
+[v-cloak]::before {
+    content: "Please wait! Loading...";
+    position: fixed;
+    top: 50%;
+    left: 60%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2563eb; /* Tailwind blue-600 */
+}
+
 /* ==================== SIDEBAR MENU ==================== */
 /* SIDEBAR */
 /* Sidebar animation smooth slide */
